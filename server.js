@@ -7,6 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- MIDDLEWARE ---
+app.use(express.json());
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || origin.includes("vercel.app") || origin.includes("localhost")) {
@@ -21,8 +22,8 @@ app.use(cors({
 // --- ROUTES ---
 
 // Health check
-app.get("/", (req, res) => {
-    res.send("AnnonsVän Pro API is running.");
+app.get("/health", (req, res) => {
+    res.json({ ok: true, time: new Date().toISOString() });
 });
 
 // AI description generation
@@ -35,12 +36,10 @@ app.post("/generate-description", async (req, res) => {
     }
 
     try {
-        // Prompt building
         const prompt = `Skriv en ${style} annonsbeskrivning för: "${title}".
         Skick: ${condition}. Pris: ${price} kr.
         Texten ska vara på svenska, utan emojis, utan specialtecken som inte funkar på annonseringsplattformar.`;
 
-        // Call Gemini API (using built-in fetch)
         const geminiRes = await fetch(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + process.env.GEMINI_API_KEY,
             {
@@ -61,8 +60,6 @@ app.post("/generate-description", async (req, res) => {
         }
 
         const data = await geminiRes.json();
-
-        // Extract AI text
         const description =
             data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 
