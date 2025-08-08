@@ -1,8 +1,6 @@
 // server.js
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
-
 require("dotenv").config();
 
 const app = express();
@@ -13,7 +11,7 @@ app.use(express.json());
 app.use(cors({
     origin: [
         "http://localhost:3000",
-        "https://annonsvn-9q38e53dw-ks-projects-b8795a81.vercel.app/" // Replace with your real Vercel URL
+        "https://<your-vercel-domain>.vercel.app" // Replace with your real Vercel URL
     ],
     methods: ["GET", "POST"]
 }));
@@ -40,7 +38,7 @@ app.post("/generate-description", async (req, res) => {
         Skick: ${condition}. Pris: ${price} kr.
         Texten ska vara på svenska, utan emojis, utan specialtecken som inte funkar på annonseringsplattformar.`;
 
-        // Call Gemini API
+        // Call Gemini API (using built-in fetch)
         const geminiRes = await fetch(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + process.env.GEMINI_API_KEY,
             {
