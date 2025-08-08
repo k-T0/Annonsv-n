@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AnnonsVän Pro</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>AnnonsVän Pro</h1>
+      <p class="tag">Skapa och publicera annonser snabbare – AI som hjälpreda.</p>
+    </header>
+
+    <main class="grid">
+      <!-- Left: form -->
+      <section class="card">
+        <h2>Skapa din annons</h2>
+
+        <div class="form-row">
+          <label for="title">Produkttitel *</label>
+          <div class="inline">
+            <input id="title" type="text" placeholder="T.ex. ASUS Grafikkort" />
+            <button class="icon" data-copy="title" title="Kopiera titel">📋</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="price">Pris (SEK) *</label>
+          <div class="inline">
+            <input id="price" type="number" inputmode="numeric" placeholder="T.ex. 1500" />
+            <button class="icon" data-copy="price" title="Kopiera pris">📋</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="condition">Skick *</label>
+          <select id="condition">
+            <option value="">Välj skick...</option>
+            <option value="new">Nytt i förpackning</option>
+            <option value="like_new">Som nytt - nästan oanvänd</option>
+            <option value="good">Mycket bra skick - små tecken på användning</option>
+            <option value="used">Använt skick - normala bruksspår</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="description">Produktbeskrivning *</label>
+          <div class="inline">
+            <textarea id="description" placeholder="Beskriv din produkt i detalj..."></textarea>
+            <button class="icon" data-copy="description" title="Kopiera beskrivning">📋</button>
+          </div>
+          <div class="ai-actions">
+            <button class="ai" data-style="minimal">AI: Minimal</button>
+            <button class="ai" data-style="simple">AI: Enkel</button>
+            <button class="ai" data-style="detailed">AI: Detaljerad</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="tags">Taggar</label>
+          <div class="inline">
+            <input id="tags" type="text" placeholder="Lägg till taggar (komma-separerade)" />
+            <button class="icon" data-copy="tags" title="Kopiera taggar">📋</button>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="saveDraftBtn" class="primary">Spara Utkast</button>
+          <button id="clearBtn" class="danger">Rensa Allt</button>
+        </div>
+      </section>
+
+      <!-- Right: marketplaces -->
+      <section class="card">
+        <h2>Publicera på marknadsplatser</h2>
+        <div class="market-buttons">
+          <button data-market="tradera">Kopiera för Tradera</button>
+          <button data-market="blocket">Kopiera för Blocket</button>
+          <button data-market="facebook">Kopiera för Facebook</button>
+          <button data-market="ebay">Kopiera för eBay</button>
+        </div>
+
+        <div class="note">
+          <p>All kopierad text är <strong>ren</strong>: inga emojis, ingen markdown, endast vanlig text.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="scripts.js" defer></script>
+</body>
+</html>

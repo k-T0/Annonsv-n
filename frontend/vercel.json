@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/generate-description",
+      "destination": "https://annonsv-n.onrender.com/generate-description"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+*{box-sizing:border-box}
+:root{
+  --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#64748b;
+  --primary:#22c55e; --danger:#ef4444; --ring:#a3e635;
+}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial}
+.container{max-width:1100px;margin:28px auto;padding:0 16px}
+.header h1{margin:0 0 6px 0}
+.header .tag{margin:0;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.card{background:var(--card);border-radius:14px;padding:16px;border:1px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,.05)}
+h2{margin:0 0 12px 0;font-size:18px}
+label{display:block;margin:10px 0 6px;font-weight:600}
+input,select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;background:white;color:var(--text)}
+textarea{min-height:140px;resize:vertical}
+.inline{display:flex;gap:8px;align-items:center}
+.icon{border:1px solid #cbd5e1;background:#f1f5f9;border-radius:10px;padding:8px 10px;cursor:pointer}
+.icon:hover{background:#e2e8f0}
+.ai-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ai{background:#ecfccb;border:1px solid #d9f99d;border-radius:10px;padding:8px 12px;cursor:pointer}
+.ai:hover{background:#d9f99d}
+.buttons{display:flex;gap:8px;margin-top:10px}
+.primary{background:var(--primary);border:none;color:white;padding:10px 14px;border-radius:12px;cursor:pointer}
+.primary:hover{filter:brightness(.95)}
+.danger{background:var(--danger);border:none;color:white;padding:10px 14px;border-radius:12px;cursor:pointer}
+.danger:hover{filter:brightness(.95)}
+.market-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.note{margin-top:10px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111827;color:#fff;padding:10px 14px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
