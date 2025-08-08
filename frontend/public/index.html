@@ -1,95 +1,68 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- IMPORTANT: put YOUR Render base URL here, NO trailing slash -->
+  <meta name="annonsvan-backend" content="https://annonsv-n.onrender.com">
+
   <title>AnnonsVän Pro</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; }
+    .row { display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+    label { font-weight:600; display:block; margin-bottom:6px; }
+    input, select, textarea { width:100%; padding:10px; font-size:16px; }
+    textarea { min-height:160px; }
+    .ai-actions { display:flex; gap:8px; margin-top:8px; }
+    .ai-btn { padding:10px 14px; border:1px solid #ddd; border-radius:8px; cursor:pointer; background:#f7f7f7; }
+    .ai-btn.active { background:#8BC34A; color:#fff; border-color:#8BC34A; }
+    .notification { position:fixed; right:16px; bottom:16px; background:#333; color:#fff; padding:12px 14px; border-radius:8px; opacity:0; transform:translateY(10px); transition:.25s; }
+    .notification.show { opacity:1; transform:translateY(0); }
+    .spinner { display:inline-block; width:16px; height:16px; border:2px solid #fff; border-right-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:-2px; margin-right:8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1>AnnonsVän Pro</h1>
-      <p class="tag">Skapa och publicera annonser snabbare – AI som hjälpreda.</p>
-    </header>
 
-    <main class="grid">
-      <!-- Left: form -->
-      <section class="card">
-        <h2>Skapa din annons</h2>
+  <h1>AnnonsVän Pro</h1>
 
-        <div class="form-row">
-          <label for="title">Produkttitel *</label>
-          <div class="inline">
-            <input id="title" type="text" placeholder="T.ex. ASUS Grafikkort" />
-            <button class="icon" data-copy="title" title="Kopiera titel">📋</button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label for="price">Pris (SEK) *</label>
-          <div class="inline">
-            <input id="price" type="number" inputmode="numeric" placeholder="T.ex. 1500" />
-            <button class="icon" data-copy="price" title="Kopiera pris">📋</button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label for="condition">Skick *</label>
-          <select id="condition">
-            <option value="">Välj skick...</option>
-            <option value="new">Nytt i förpackning</option>
-            <option value="like_new">Som nytt - nästan oanvänd</option>
-            <option value="good">Mycket bra skick - små tecken på användning</option>
-            <option value="used">Använt skick - normala bruksspår</option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <label for="description">Produktbeskrivning *</label>
-          <div class="inline">
-            <textarea id="description" placeholder="Beskriv din produkt i detalj..."></textarea>
-            <button class="icon" data-copy="description" title="Kopiera beskrivning">📋</button>
-          </div>
-          <div class="ai-actions">
-            <button class="ai" data-style="minimal">AI: Minimal</button>
-            <button class="ai" data-style="simple">AI: Enkel</button>
-            <button class="ai" data-style="detailed">AI: Detaljerad</button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <label for="tags">Taggar</label>
-          <div class="inline">
-            <input id="tags" type="text" placeholder="Lägg till taggar (komma-separerade)" />
-            <button class="icon" data-copy="tags" title="Kopiera taggar">📋</button>
-          </div>
-        </div>
-
-        <div class="buttons">
-          <button id="saveDraftBtn" class="primary">Spara Utkast</button>
-          <button id="clearBtn" class="danger">Rensa Allt</button>
-        </div>
-      </section>
-
-      <!-- Right: marketplaces -->
-      <section class="card">
-        <h2>Publicera på marknadsplatser</h2>
-        <div class="market-buttons">
-          <button data-market="tradera">Kopiera för Tradera</button>
-          <button data-market="blocket">Kopiera för Blocket</button>
-          <button data-market="facebook">Kopiera för Facebook</button>
-          <button data-market="ebay">Kopiera för eBay</button>
-        </div>
-
-        <div class="note">
-          <p>All kopierad text är <strong>ren</strong>: inga emojis, ingen markdown, endast vanlig text.</p>
-        </div>
-      </section>
-    </main>
+  <div class="row">
+    <div style="flex:1 1 280px;">
+      <label for="title">Titel *</label>
+      <input id="title" placeholder="ASUS Radeon RX 7600XT 16GB">
+    </div>
+    <div style="flex:0 1 160px;">
+      <label for="price">Pris (SEK) *</label>
+      <input id="price" type="number" placeholder="2850">
+    </div>
+    <div style="flex:0 1 240px;">
+      <label for="condition">Skick *</label>
+      <select id="condition">
+        <option value="">Välj skick…</option>
+        <option value="new">Nytt i förpackning</option>
+        <option value="like_new">Som nytt - nästan oanvänd</option>
+        <option value="good">Mycket bra skick - små tecken på användning</option>
+        <option value="used">Använt skick - normala bruksspår</option>
+      </select>
+    </div>
   </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="scripts.js" defer></script>
+  <div>
+    <label for="description">Beskrivning *</label>
+    <textarea id="description" placeholder="Beskriv din produkt…"></textarea>
+
+    <div class="ai-actions">
+      <button class="ai-btn" data-style="minimal"><i class="fa-solid fa-robot"></i> AI: Minimal</button>
+      <button class="ai-btn" data-style="simple"><i class="fa-solid fa-robot"></i> AI: Enkel</button>
+      <button class="ai-btn" data-style="detailed"><i class="fa-solid fa-robot"></i> AI: Detaljerad</button>
+    </div>
+  </div>
+
+  <div id="toast" class="notification"></div>
+
+  <!-- Your JS -->
+  <script src="scripts.js"></script>
 </body>
 </html>
