@@ -123,42 +123,38 @@ $$(".icon").forEach(btn=>{
 });
 
 // --- AI generation ---
-async function callAI(style){
-  const title = $("#title").value.trim();
-  const price = $("#price").value.trim();
-  const condition = $("#condition").value;
+async function generateDescription(style) {
+    const title = document.getElementById("title").value;
+    const price = document.getElementById("price").value;
+    const condition = document.getElementById("condition").value;
 
-  if(!title || !price || !condition){
-    toast("Fyll i titel, pris och skick först.");
-    return;
-  }
+    const status = document.getElementById("status");
+    status.textContent = "Generating AI description...";
+    
+    try {
+        const res = await fetch("/api/generate-description", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ style, title, condition, price })
+        });
 
-  try {
-    const res = await fetch("/api/generate-description", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        style,
-        title,
-        condition: $("#condition").options[$("#condition").selectedIndex].text,
-        price
-      })
-    });
-    const data = await res.json();
-    if(data?.description){
-      $("#description").value = data.description;
-      dirty = true;
-      toast("Beskrivning genererad.");
-    } else {
-      toast("Kunde inte generera beskrivning.");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        if (data.description) {
+            document.getElementById("description").value = data.description;
+            status.textContent = "Description generated successfully.";
+        } else {
+            throw new Error("No description returned.");
+        }
+
+    } catch (err) {
+        console.error(err);
+        status.textContent = "Error generating description. Please try again.";
     }
-  } catch(e){
-    console.error(e);
-    toast("API-fel.");
-  }
-}
 
-$$(".ai").forEach(b=> b.addEventListener("click", ()=> callAI(b.dataset.style)));
+    setTimeout(() => status.textContent = "", 4000);
+}
 
 // init
 window.addEventListener("DOMContentLoaded", ()=>{
