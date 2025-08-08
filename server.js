@@ -1,51 +1,82 @@
+// server.js
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
+const fetch = require("node-fetch");
+
 require("dotenv").config();
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 const app = express();
-app.use(bodyParser.json());
+const PORT = process.env.PORT || 3001;
 
-// CORS: allow only your Vercel app + localhost for dev. Update the vercel URL if different.
+// --- MIDDLEWARE ---
+app.use(express.json());
 app.use(cors({
-  origin: ["https://annonsvn.vercel.app", "http://localhost:3000"],
-  methods: ["POST"]
+    origin: [
+        "http://localhost:3000",
+        "https://<your-vercel-domain>.vercel.app" // Replace with your real Vercel URL
+    ],
+    methods: ["GET", "POST"]
 }));
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.warn("Warning: GEMINI_API_KEY is not set.");
-}
-const genAI = new GoogleGenerativeAI(apiKey);
+// --- ROUTES ---
 
-// Proxy to Gemini (plain text only)
-app.post("/generate-description", async (req, res) => {
-  try {
-    const { style, title, condition, price } = req.body;
-
-    const prompt = `Skriv en ${style} svensk produktbeskrivning för en annons.
-Produkt: ${title}
-Skick: ${condition}
-Pris: ${price} SEK
-
-Viktigt:
-- Endast vanlig text. Inga emojis. Ingen markdown. Inga list-symboler.
-- 3–8 meningar beroende på stil.
-- Fokusera på skick, funktion, och vad köparen får.
-`;
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-
-    res.json({ description: text });
-  } catch (err) {
-    console.error("Gemini error:", err);
-    res.status(500).json({ error: "Description generation failed" });
-  }
+// Health check
+app.get("/", (req, res) => {
+    res.send("AnnonsVän Pro API is running.");
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log("Server running on port " + PORT));
+// AI description generation
+app.post("/generate-description", async (req, res) => {
+    const { style, title, condition, price } = req.body;
+    console.log("Incoming generate-description request:", req.body);
+
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Gemini API key not configured" });
+    }
+
+    try {
+        // Prompt building
+        const prompt = `Skriv en ${style} annonsbeskrivning för: "${title}".
+        Skick: ${condition}. Pris: ${price} kr.
+        Texten ska vara på svenska, utan emojis, utan specialtecken som inte funkar på annonseringsplattformar.`;
+
+        // Call Gemini API
+        const geminiRes = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + process.env.GEMINI_API_KEY,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            parts: [{ text: prompt }]
+                        }
+                    ]
+                })
+            }
+        );
+
+        if (!geminiRes.ok) {
+            throw new Error(`Gemini API error: ${geminiRes.status}`);
+        }
+
+        const data = await geminiRes.json();
+
+        // Extract AI text
+        const description =
+            data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+
+        console.log("Generated description:", description);
+
+        res.json({ description });
+
+    } catch (err) {
+        console.error("Error generating description:", err);
+        res.status(500).json({ error: "Failed to generate description" });
+    }
+});
+
+// --- START SERVER ---
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
