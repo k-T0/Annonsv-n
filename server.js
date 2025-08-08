@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(cors({
     origin: [
         "http://localhost:3000",
-        "https://<your-vercel-domain>.vercel.app" // Replace with your real Vercel URL
+        "https://annonsvn-9q38e53dw-ks-projects-b8795a81.vercel.app/" // Replace with your real Vercel URL
     ],
     methods: ["GET", "POST"]
 }));
