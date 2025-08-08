@@ -7,12 +7,14 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- MIDDLEWARE ---
-app.use(express.json());
 app.use(cors({
-    origin: [
-        "http://localhost:3000",
-        "https://<your-vercel-domain>.vercel.app" // Replace with your real Vercel URL
-    ],
+    origin: (origin, callback) => {
+        if (!origin || origin.includes("vercel.app") || origin.includes("localhost")) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
     methods: ["GET", "POST"]
 }));
 
