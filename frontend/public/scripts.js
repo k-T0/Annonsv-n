@@ -130,7 +130,7 @@ async function generateDescription(style) {
 
     const status = document.getElementById("status");
     status.textContent = "Generating AI description...";
-    
+
     try {
         const res = await fetch("/api/generate-description", {
             method: "POST",
@@ -141,6 +141,7 @@ async function generateDescription(style) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
+
         if (data.description) {
             document.getElementById("description").value = data.description;
             status.textContent = "Description generated successfully.";
