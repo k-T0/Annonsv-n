@@ -5,44 +5,74 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Annonsvän Pro</title>
   <link rel="stylesheet" href="styles.css" />
+  <!-- Backend base URL (no trailing slash) -->
   <meta name="backend" content="https://annonsv-n.onrender.com" />
 </head>
 <body>
 
-  <h1>Annonsvän Pro</h1>
+  <div class="container">
+    <div class="header">
+      <h1>Annonsvän Pro</h1>
+      <p class="tag">Snabb hubb för Blocket, Facebook Marketplace, Tradera m.fl.</p>
+    </div>
 
-  <label for="title">Titel</label>
-  <input type="text" id="title" placeholder="Skriv titel här" />
+    <div class="grid">
+      <div class="card">
+        <h2>Skapa annons</h2>
 
-  <label for="price">Pris (SEK)</label>
-  <input type="number" id="price" placeholder="Skriv pris här" />
+        <label for="title">Titel*</label>
+        <input type="text" id="title" placeholder="Skriv titel här" autocomplete="off" />
 
-  <label for="condition">Skick</label>
-  <select id="condition">
-    <option value="">Välj skick</option>
-    <option value="Nytt">Nytt</option>
-    <option value="Mycket bra">Mycket bra</option>
-    <option value="Bra">Bra</option>
-    <option value="Okej">Okej</option>
-    <option value="Dåligt">Dåligt</option>
-  </select>
+        <label for="price">Pris (SEK)*</label>
+        <input type="number" id="price" placeholder="Skriv pris här" inputmode="numeric" />
 
-  <label for="description">Beskrivning</label>
-  <textarea id="description" rows="6" placeholder="Beskrivning..."></textarea>
+        <label for="condition">Skick*</label>
+        <select id="condition">
+          <option value="">Välj skick</option>
+          <option value="Nytt">Nytt</option>
+          <option value="Mycket bra">Mycket bra</option>
+          <option value="Bra">Bra</option>
+          <option value="Okej">Okej</option>
+          <option value="Dåligt">Dåligt</option>
+        </select>
 
-  <div class="buttons">
-    <button class="ai-btn" data-style="simple"><i class="fas fa-robot"></i> AI (Enkel)</button>
-    <button class="ai-btn" data-style="detailed"><i class="fas fa-robot"></i> AI (Detaljerad)</button>
-  </div>
+        <label for="description">Beskrivning*</label>
+        <textarea id="description" rows="8" placeholder="Beskrivning..."></textarea>
 
-  <label for="tags">Taggar</label>
-  <input type="text" id="tags" placeholder="Taggar separerade med komma" />
+        <div class="ai-actions">
+          <button class="ai-btn" data-style="simple"><span>🤖</span> AI (Enkel)</button>
+          <button class="ai-btn" data-style="detailed"><span>🤖</span> AI (Detaljerad)</button>
+        </div>
 
-  <div class="buttons">
-    <button class="copy-btn" data-copy="title">Kopiera titel</button>
-    <button class="copy-btn" data-copy="description">Kopiera beskrivning</button>
-    <button class="copy-btn" data-copy="price">Kopiera pris</button>
-    <button class="copy-btn" data-copy="tags">Kopiera taggar</button>
+        <label for="tags">Taggar</label>
+        <input type="text" id="tags" placeholder="Taggar separerade med komma" />
+
+        <div class="buttons">
+          <button class="primary" id="save-draft">Spara utkast</button>
+          <button class="danger" id="clear-all">Rensa allt</button>
+        </div>
+
+        <div class="buttons">
+          <button class="copy-btn" data-copy="title">Kopiera titel</button>
+          <button class="copy-btn" data-copy="description">Kopiera beskrivning</button>
+          <button class="copy-btn" data-copy="price">Kopiera pris</button>
+          <button class="copy-btn" data-copy="tags">Kopiera taggar</button>
+        </div>
+
+        <p class="note">Autosparar i bakgrunden var 2:e minut. “Rensa allt” påverkar inte sparade utkast.</p>
+      </div>
+
+      <div class="card">
+        <h2>Publicering (manual copy)</h2>
+        <div class="market-buttons">
+          <button class="primary" data-market="blocket">Format för Blocket</button>
+          <button class="primary" data-market="facebook">Format för Facebook</button>
+          <button class="primary" data-market="tradera">Format för Tradera</button>
+          <button class="primary" data-market="ebay">Format för eBay</button>
+        </div>
+        <p class="note">Knapparna kopierar en plats-anpassad, ren text utan markdown/emojis.</p>
+      </div>
+    </div>
   </div>
 
   <!-- Notification Toast -->
