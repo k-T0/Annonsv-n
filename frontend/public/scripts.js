@@ -96,7 +96,7 @@
     if(!incoming.length) return;
     Promise.all(incoming.map(f=>compressToThumb(f,1200,0.8))).then(datas=>{
       datas.forEach(data=>{ if(data) thumbs.push({src:data, rotation:0, id:Date.now()+Math.random()}); });
-      renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
+      renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
     });
   }
   function compressToThumb(file, max=1200, quality=0.8){
@@ -138,7 +138,21 @@
         </div>`;
       gallery.appendChild(w);
     });
+  
+  function renderPreviewThumbs(){
+    const box = previewPhotos;
+    if(!box) return;
+    box.innerHTML='';
+    if(!thumbs.length){ box.textContent='Bilder visas här'; return; }
+    thumbs.forEach(t=>{
+      const img=document.createElement('img');
+      img.src=t.src;
+      img.className='mini';
+      img.style.transform=`rotate(${t.rotation}deg)`;
+      box.appendChild(img);
+    });
   }
+}
 
   // Drag to reorder (gallery)
   let dragId=null;
@@ -149,11 +163,13 @@
   });
   gallery.addEventListener('dragend', e=>{
     const thumb=e.target.closest('.thumb'); if(thumb) thumb.classList.remove('dragging');
+    window.__lastOverId = null;
   });
   gallery.addEventListener('dragover', e=>{
     e.preventDefault();
     const over=e.target.closest('.thumb'); if(!over) return;
-    const overId=over.dataset.id; if(!dragId || dragId===overId) return;
+    const overId=over.dataset.id; if(!dragId || dragId===overId || overId===window.__lastOverId) return;
+    window.__lastOverId = overId;
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
     const toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
     if(fromIdx<0 || toIdx<0) return;
@@ -161,17 +177,16 @@
     thumbs.splice(toIdx,0,item);
     renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
   });
-
-  // Click tools: rotate, view, delete, set cover
+// Click tools: rotate, view, delete, set cover
   gallery.addEventListener('click', e=>{
     const rot=e.target.getAttribute('data-rot');
     const view=e.target.getAttribute('data-view');
     const del=e.target.getAttribute('data-del');
     const cov=e.target.getAttribute('data-cover');
-    if(rot){ const t=thumbs.find(x=>String(x.id)===rot); if(t){ t.rotation=(t.rotation+90)%360; renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft(); } }
+    if(rot){ const t=thumbs.find(x=>String(x.id)===rot); if(t){ t.rotation=(t.rotation+90)%360; renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
     if(view){ openLB(view); }
-    if(del){ thumbs=thumbs.filter(x=>String(x.id)!==del); renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft(); }
-    if(cov){ const i=thumbs.findIndex(x=>String(x.id)===cov); if(i>0){ const [it]=thumbs.splice(i,1); thumbs.unshift(it); renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft(); } }
+    if(del){ thumbs=thumbs.filter(x=>String(x.id)!==del); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); }
+    if(cov){ const i=thumbs.findIndex(x=>String(x.id)===cov); if(i>0){ const [it]=thumbs.splice(i,1); thumbs.unshift(it); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
   });
 
   // Lightbox
@@ -214,28 +229,36 @@
   // Marketplace state + progress + sold
   const state=loadMarkets(); updateAll(); updateProgress();
   qsa('[data-open]').forEach(btn=>btn.addEventListener('click',()=>{
-    const m=btn.getAttribute('data-open'); const txt=formatFor(m);
-    navigator.clipboard.writeText(String(txt).replace(/\r?\n/g,'\n')).then(()=>toastMsg(`Innehåll kopierat (${m})`)).catch(()=>toastMsg('Kunde inte kopiera (ok)'));
-    const url={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sell'};
-    window.open(url[m],'_blank');
-  }));
+  const m=btn.getAttribute('data-open'); const txt=formatFor(m);
+  const url={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sell'};
+  window.open(url[m],'_blank');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(String(txt).replace(/
+?
+/g,'
+')).catch(()=>{});
+  }
+}));
   qsa('[data-complete]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-complete'); if(soldFlag) return;
     state[m]=!state[m]; saveMarkets(); updateAll(); updateProgress(); deriveStatusFromFields(); persistMarketsIfDraft();
   }));
 
-  function updateAll(){ Object.keys(state).forEach(m=>{ byId(`${m}-status`).classList.toggle('completed', !!state[m]); const b=qs(`.complete-btn[data-complete="${m}"]`); if(b){ b.classList.toggle('completed', !!state[m]); b.setAttribute('aria-pressed', String(!!state[m])); } }); }
-  function updateProgress(){ if(soldFlag){ byId('progress-text').textContent='Färdig 🎉'; return; } const done=Object.values(state).filter(Boolean).length; const total=Object.keys(state).length; byId('progress-text').textContent=Math.round((done/total)*100)+'% slutfört'; }
+  function updateAll(){ Object.keys(state).forEach(m=>{
+    byId(`${m}-status`).classList.toggle('completed', !!state[m]);
+    const b=qs(`.complete-btn[data-complete="${m}"]`);
+    b.classList.toggle('completed', !!state[m]);
+  }); }
+  function updateProgress(){
+    const done=Object.values(state).filter(Boolean).length;
+    const total=Object.keys(state).length;
+    byId('progress-text').textContent=Math.round((done/total)*100)+'% slutfört';
+  }
   function formatFor(m){
     const condText=condition.value||'';
     if(m==='tradera')return `${title.value}\n\n${description.value}\n\nSkick: ${condText}\nUtgångspris: ${price.value} SEK\nTaggar: ${tags.value}`;
     if(m==='blocket')return `${title.value} - ${price.value} SEK\n\n${description.value}\n\nSkick: ${condText}\nTaggar: ${tags.value}`;
-    if(m==='facebook')return `${title.value}
-${price.value} SEK
-
-${description.value}${(typeof city!=='undefined' && city && city.value)?`
-
-Hämtas i ${city.value}`:''}`;
+    if(m==='facebook')return `${title.value}\n${price.value} SEK\n\n${description.value}\n\nTaggar: ${tags.value}`;
     if(m==='ebay')return `${title.value} [${condText}]\n\n${description.value}\n\nPrice: ${price.value} SEK\nTags: ${tags.value}`;
     return `${title.value}\n${description.value}`;
   }
@@ -257,28 +280,8 @@ Hämtas i ${city.value}`:''}`;
   on('mark-sold','click',()=>{
     soldFlag=true; currentStatus='sold'; confetti(); toastMsg('Markerad som såld 🎉');
     qsa('.complete-btn').forEach(b=>b.setAttribute('disabled','disabled'));
-    // Do NOT auto-set per-site flags; preserve actual published state
-    saveMarkets(); updateAll(); updateProgress(); persistMarketsIfDraft();
-  });
-
-  
-  // Keyboard shortcuts: Ctrl/Cmd+1–4 to open; Ctrl/Cmd+Shift+1–4 to toggle Klar
-  const MARKET_KEYS=['tradera','blocket','facebook','ebay'];
-  window.addEventListener('keydown',(e)=>{
-    const isCmd=e.metaKey||e.ctrlKey;
-    if(!isCmd) return;
-    const num=Number(e.key);
-    if(![1,2,3,4].includes(num)) return;
-    e.preventDefault();
-    const key=MARKET_KEYS[num-1];
-    if(e.shiftKey){
-      if(soldFlag) return;
-      state[key]=!state[key]; saveMarkets(); updateAll(); updateProgress(); deriveStatusFromFields(); persistMarketsIfDraft();
-      const live=document.getElementById('aria-live'); if(live){ live.textContent=''; setTimeout(()=>{ live.textContent = key + ' ' + (state[key]?'klar':'inte klar'); }, 10); }
-    } else {
-      const urls={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/ny',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sl/sell'};
-      const url=urls[key]; if(url) window.open(url,'_blank');
-    }
+    qsa('.complete-btn').forEach(b=>b.classList.add('completed'));
+    Object.keys(state).forEach(k=>state[k]=true); saveMarkets(); updateAll(); updateProgress(); persistMarketsIfDraft();
   });
 
   // Confetti (tiny burst)
@@ -323,7 +326,7 @@ Hämtas i ${city.value}`:''}`;
           <div class="draft-meta">${new Date(d.date).toLocaleString('sv-SE')}</div>
         </div>
         <div class="draft-actions">
-          <button class="pill" data-load="${d.id}">↺ Ladda</button>
+          <button class="pill" data-load="${d.id}">Ladda</button>
           <button class="pill" data-del="${d.id}">Ta bort</button>
         </div>`;
       draftList.appendChild(wrap);
@@ -375,12 +378,11 @@ Hämtas i ${city.value}`:''}`;
     thumbs=[]; renderGallery(); renderPreviewThumbs(); renderChips();
     Object.keys(state).forEach(k=>state[k]=false); saveMarkets(); updateAll(); updateProgress();
     soldFlag=false; currentStatus='draft'; qsa('.complete-btn').forEach(b=>b.removeAttribute('disabled'));
-    updatePreview(); recalc(); toastMsg('Rensat'); byId('q-score').textContent='0'; byId('q-suggestions').innerHTML='';
+    updatePreview(); recalc(); toastMsg('Rensat');
   });
 
-  // Seed a demo draft on first run (disabled by default)
-  // /* seedDemo disabled */
-  // // seedDemo();
+  // Seed a demo draft on first run
+  seedDemo();
   function seedDemo(){
     const has=loadDrafts().length>0; if(has) { renderDrafts(); return; }
     const placeholder='data:image/svg+xml;base64,'+btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180"><rect width="100%" height="100%" fill="#e9eef9"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Inter" font-size="16" fill="#6b7aa3">Bild</text></svg>`);
@@ -403,11 +405,4 @@ Hämtas i ${city.value}`:''}`;
   function toastMsg(t){ toast.textContent=t; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
   function doc(id){return document.getElementById(id)} function byId(id){return document.getElementById(id)} function qs(s){return document.querySelector(s)} function qsa(s){return Array.from(document.querySelectorAll(s))}
   function on(id,ev,fn){ const el=byId(id); el&&el.addEventListener(ev,fn); }
-
-  /* __BOOT__ */
-  renderDrafts();
-  renderGallery();
-  renderPreviewThumbs && renderPreviewThumbs();
-  updatePreview();
-  recalc();
 })();
