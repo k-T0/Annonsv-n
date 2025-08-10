@@ -136,3 +136,46 @@ textarea{min-height:150px;resize:vertical}
 /* Confetti canvas */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:35;display:none}
 .confetti.show{display:block}
+
+
+/* A11y & dividers */
+:focus-visible { outline: 2px solid var(--periwinkle); outline-offset: 2px; box-shadow: var(--focus); }
+.field + .field { border-top: 1px solid rgba(18,23,34,.06); padding-top: 10px; margin-top: 10px; }
+.klar-btn, .complete-btn { min-width: 44px; min-height: 44px; }
+.complete-btn[aria-pressed="true"], .complete-btn.completed { background: #E6F6EF; border-color: var(--sage); }
+/* Optional hero chip if needed */
+.thumb.is-hero{ position: relative; }
+.thumb.is-hero::after{
+  content:"Omslag"; position:absolute; top:8px; left:8px; font-size:12px;
+  padding:2px 8px; border-radius:9999px; background:rgba(124,201,167,.12);
+  color:#2d5f4c; border:1px solid var(--sage);
+}
+/* Visually hidden utility */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+
+/* Form system look */
+.input-wrap input,
+.input-wrap textarea,
+.input-wrap select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  font: inherit;
+  color: var(--text);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.input-wrap textarea { min-height: 120px; resize: vertical; }
+.input-wrap input::placeholder,
+.input-wrap textarea::placeholder { color: #9aa3b2; }
+.input-wrap input:focus,
+.input-wrap textarea:focus,
+.input-wrap select:focus { outline: 0; box-shadow: var(--focus); border-color: var(--periwinkle); }
+
+.select-wrap select { appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><path d="M3 6l5 5 5-5" fill="none" stroke="%23647089" stroke-width="2" stroke-linecap="round"/></svg>'); background-repeat:no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+.action-buttons .pill.open { border-color: var(--periwinkle); }
+.action-buttons .pill.complete-btn { border-color: var(--sage); }
+.action-buttons .pill.complete-btn.completed { background: #E6F6EF; }
