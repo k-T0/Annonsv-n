@@ -1,192 +1,235 @@
-// Core config
+// Config
 const BACKEND = (document.querySelector('meta[name="backend"]')?.content || '').replace(/\/+$/, '');
 
-// Notify
-function showNotification(text){
-  const n=document.getElementById('notification');
-  document.getElementById('notification-text').textContent=text;
-  n.classList.add('show'); setTimeout(()=>n.classList.remove('show'), 2000);
-}
+// Toast
+function toast(msg){ const el=document.getElementById('toast'); document.getElementById('toast-text').textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1800); }
 
 // Sanitize
 function stripMarkdownEmoji(s=''){
-  s = s.replace(/(^|\s)#{1,6}\s*/g,'$1')
-       .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1')
-       .replace(/`{1,3}[^`]*`{1,3}/g,'')
-       .replace(/^\s*[-*•]\s+/gm,'· ');
-  try{ s = s.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/gu,''); }catch{}
-  s = s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n');
+  s=s.replace(/(^|\s)#{1,6}\s*/g,'$1')
+     .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1')
+     .replace(/`{1,3}[^`]*`{1,3}/g,'')
+     .replace(/^\s*[-*•]\s+/gm,'· ');
+  try{ s=s.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/gu,''); }catch{}
+  s=s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n');
   return s.trim();
 }
 function cleanText(s){ return (s||'').toString().replace(/[^\n\r\t\u0020-\u007EåäöÅÄÖ.,;:!?()\-\w]/g,''); }
 
-// Marketplace state
-const marketplaceState = {
-  tradera:{ completed:false, url:'https://www.tradera.com/selling/new' },
-  blocket:{ completed:false, url:'https://www.blocket.se/mina-annonser/lagg-in-annons' },
-  facebook:{ completed:false, url:'https://www.facebook.com/marketplace/create/item' },
-  ebay:{ completed:false, url:'https://www.ebay.com/sell' }
-};
-
-// Helpers
+// Data helpers
 function getData(){
-  const condSel = document.getElementById('condition');
-  const condition = condSel?.options[condSel.selectedIndex]?.text || '';
+  const condSel=document.getElementById('condition');
+  const condition=condSel?.options[condSel.selectedIndex]?.text||'';
   return {
     title: document.getElementById('title').value.trim(),
     price: document.getElementById('price').value.trim(),
     condition,
-    notes: document.getElementById('notes')?.value || '',
-    city: document.getElementById('city')?.value || '',
-    tags: document.getElementById('tags')?.value || '',
-    lang: document.querySelector('#lang-switch .lang.active')?.dataset.lang || 'sv'
+    notes: document.getElementById('notes').value,
+    city: document.getElementById('city').value,
+    tags: document.getElementById('tags').value,
+    description: document.getElementById('description').value
   };
 }
 function setData(d={}){
   document.getElementById('title').value = d.title||'';
   document.getElementById('price').value = d.price||'';
-  const condSel=document.getElementById('condition');
-  if(condSel){
-    let idx=0; for(let i=0;i<condSel.options.length;i++){ if(condSel.options[i].text=== (d.condition||'')){ idx=i; break; } }
-    condSel.selectedIndex = idx;
-  }
-  document.getElementById('description').value = d.description||'';
-  document.getElementById('tags').value = d.tags||'';
+  const sel=document.getElementById('condition');
+  if(sel){ let idx=0; for(let i=0;i<sel.options.length;i++){ if(sel.options[i].text=== (d.condition||'')){ idx=i; break;} } sel.selectedIndex=idx; }
   document.getElementById('notes').value = d.notes||'';
-  document.getElementById('city').value = d.city||localStorage.getItem('avp.defaultCity')||'';
+  document.getElementById('city').value = d.city||'';
+  document.getElementById('tags').value = d.tags||'';
+  document.getElementById('description').value = d.description||'';
+  renderTags((d.tags||'').split(',').map(t=>t.trim()));
 }
-function resetForm(){ setData({ title:'', price:'', condition:'', description:'', tags:'', notes:'', city:'' }); }
-function copy(text, msg){ navigator.clipboard.writeText(text).then(()=>showNotification(msg||'kopierat!')); }
 
-// AI call
+// AI
 async function callAI(payload){
-  const res = await fetch(`${BACKEND}/generate-description`,{
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
-  });
+  const res=await fetch(`${BACKEND}/generate-description`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
   if(!res.ok) throw new Error(await res.text());
   return res.json();
 }
 async function handleGenerate(style, btn){
-  const { title, price, condition, notes, city, lang } = getData();
-  if(!title || !price || !condition){ showNotification('fyll i titel, pris och skick först'); return; }
-  if(btn){ btn.dataset.old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '⏳ genererar…'; }
-  let description = '';
+  const { title, price, condition, notes, city } = getData();
+  if(!title || !price || !condition){ toast('fyll i titel, pris och skick'); return; }
+  const old=btn.textContent; btn.disabled=true; btn.textContent='⏳ genererar…';
   try{
-    const data = await callAI({ style, title: cleanText(title), condition: cleanText(condition), price: cleanText(price), notes, city, lang });
-    description = cleanText(stripMarkdownEmoji((data.description||'').trim()));
-  }catch(e){
-    console.warn('AI failed, using fallback', e);
-    description = `${title} i ${condition} skick. Pris: ${price} SEK.`;
-    showNotification('kunde inte nå AI (fallback)');
-  }
-  document.getElementById('description').value = description;
-  showNotification(`beskrivning genererad (${style})`);
-  if(btn){ btn.disabled = false; btn.innerHTML = btn.dataset.old; }
+    const data = await callAI({ style, title: cleanText(title), condition: cleanText(condition), price: cleanText(price), notes, city });
+    const desc = cleanText(stripMarkdownEmoji((data.description||'').trim()));
+    document.getElementById('description').value = desc;
+    toast(`beskrivning (${style}) klar`);
+  }catch(e){ console.warn(e); toast('kunde inte nå ai'); }
+  finally{ btn.disabled=false; btn.textContent=old; }
 }
 
-// Language toggle
+// Tags
+function renderTags(tags){ const c=document.getElementById('tag-container'); c.innerHTML=''; tags.filter(Boolean).forEach(t=>{ const el=document.createElement('span'); el.className='tag'; el.innerHTML=`${t} <span class="x" data-del="${t}">×</span>`; c.appendChild(el); }); }
+function updateTags(str){ document.getElementById('tags').value=str; renderTags(str.split(',').map(t=>t.trim())); }
+document.addEventListener('input', (e)=>{ if(e.target.id==='tags'){ renderTags(e.target.value.split(',').map(t=>t.trim())); } });
+document.addEventListener('click', (e)=>{ const x=e.target.closest('.x'); if(x){ const t = x.getAttribute('data-del'); const arr=document.getElementById('tags').value.split(',').map(s=>s.trim()).filter(v=>v&&v!==t); updateTags(arr.join(', ')); } });
+
+// Copy
+function copyText(text){ navigator.clipboard.writeText(text).then(()=>toast('kopierat')); }
 document.addEventListener('click', (e)=>{
-  const btn = e.target.closest('#lang-switch .lang'); if(!btn) return;
-  document.querySelectorAll('#lang-switch .lang').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  showNotification(`språk: ${btn.dataset.lang}`);
+  const b=e.target.closest('[data-copy]'); if(!b) return;
+  const type=b.getAttribute('data-copy');
+  let text=''; if(type==='title') text=document.getElementById('title').value;
+  if(type==='price') text=document.getElementById('price').value+' SEK';
+  if(type==='tags') text=document.getElementById('tags').value;
+  if(type==='description') text=cleanText(stripMarkdownEmoji(document.getElementById('description').value));
+  if(!text) return toast('inget att kopiera');
+  copyText(text);
 });
 
-// Tag rendering
-function renderTags(tags){
-  const c=document.getElementById('tag-container'); if(!c) return; c.innerHTML='';
-  tags.forEach(t=>{ if(!t) return; const el=document.createElement('span'); el.className='tag'; el.textContent = t; c.appendChild(el); });
-}
-document.addEventListener('input', (e)=>{
-  if(e.target.id==='tags'){ renderTags(e.target.value.split(',').map(t=>t.trim())); }
-});
-
-// Copy buttons
-document.addEventListener('click', (e)=>{
-  const ai = e.target.closest('.ai-btn'); if(ai){ handleGenerate(ai.dataset.style, ai); return; }
-  const copyBtn = e.target.closest('.copy-btn');
-  if(copyBtn){
-    const target = copyBtn.getAttribute('data-copy'); let text = '';
-    if(target==='title') text = document.getElementById('title').value;
-    if(target==='price') text = document.getElementById('price').value + ' SEK';
-    if(target==='description') text = cleanText(stripMarkdownEmoji(document.getElementById('description').value));
-    if(target==='tags') text = document.getElementById('tags').value;
-    if(!text) return showNotification('fältet är tomt');
-    copy(text, 'kopierat');
-  }
-});
-
-// Marketplace helpers
+// Marketplace
+const marketplace={
+  tradera:{ url:'https://www.tradera.com/selling/new', done:false },
+  blocket:{ url:'https://www.blocket.se/mina-annonser/lagg-in-annons', done:false },
+  facebook:{ url:'https://www.facebook.com/marketplace/create/item', done:false },
+  ebay:{ url:'https://www.ebay.com/sell', done:false }
+};
 function buildFor(market){
-  const { title, price, condition, description, tags } = {
-    ...getData(), description: document.getElementById('description').value
-  };
-  const desc = cleanText(stripMarkdownEmoji(description));
-  if(!title || !price || !condition || !desc){ showNotification('fyll i titel, pris, skick, beskrivning'); return ''; }
+  const d=getData(); const desc=cleanText(stripMarkdownEmoji(d.description));
+  if(!d.title || !d.price || !d.condition || !desc){ toast('fyll i titel, pris, skick, beskrivning'); return ''; }
   switch(market){
-    case 'tradera': return `${title}\n\n${desc}\n\nSkick: ${condition}\nUtgångspris: ${price} SEK\nTaggar: ${tags}`;
-    case 'blocket': return `${title} – ${price} SEK\n\n${desc}\n\nSkick: ${condition}\nTaggar: ${tags}`;
-    case 'facebook': return `${title}\n${price} SEK\n\n${desc}`;
-    case 'ebay': return `${title} [${condition}]\n\n${desc}\n\nPrice: ${price} SEK\nTags: ${tags}`;
-    default: return `${title}\n${desc}\nPris: ${price} SEK\nSkick: ${condition}\n${tags}`;
+    case 'tradera': return `${d.title}\n\n${desc}\n\nSkick: ${d.condition}\nUtgångspris: ${d.price} SEK\nTaggar: ${d.tags}`;
+    case 'blocket': return `${d.title} – ${d.price} SEK\n\n${desc}\n\nSkick: ${d.condition}\nTaggar: ${d.tags}`;
+    case 'facebook': return `${d.title}\n${d.price} SEK\n\n${desc}`;
+    case 'ebay': return `${d.title} [${d.condition}]\n\n${desc}\n\nPrice: ${d.price} SEK\nTags: ${d.tags}`;
+    default: return '';
   }
 }
-function updateMarketplaceUI(market){ const status=document.getElementById(`${market}-status`); const btn=document.querySelector(`.marketplace-item[data-market="${market}"] .complete-btn`); const done=btn?.classList.toggle('completed'); status?.classList.toggle('status-completed', !!done); updateProgress(); }
-function updateProgress(){ const done = Array.from(document.querySelectorAll('.complete-btn.completed')).length; const total = 4; const pct = Math.round(done/total*100); document.getElementById('progress-bar').style.width = `${pct}%`; document.getElementById('progress-text').textContent = `${pct}% klart`; }
+function updateProgress(){
+  const done=Object.values(marketplace).filter(x=>x.done).length;
+  const pct=Math.round(done/4*100);
+  document.getElementById('progress-bar').style.width=`${pct}%`;
+  document.getElementById('progress-text').textContent=`${pct}% klart`;
+}
+
+// Click handlers for publish & general buttons
+document.addEventListener('click', (e)=>{
+  if(e.target.classList.contains('ai')){ handleGenerate(e.target.getAttribute('data-style'), e.target); return; }
+
+  const open=e.target.closest('[data-open]');
+  if(open){ const m=open.getAttribute('data-open'); const payload=buildFor(m); if(!payload) return;
+    navigator.clipboard.writeText(payload).then(()=>toast(`format för ${m} kopierat`));
+    window.open(marketplace[m].url,'_blank'); return;
+  }
+  const complete=e.target.closest('[data-complete]');
+  if(complete){ const m=complete.getAttribute('data-complete'); marketplace[m].done=!marketplace[m].done; document.getElementById(`${m}-status`).classList.toggle('done', marketplace[m].done); updateProgress(); return; }
+
+  if(e.target.id==='copy-all'){ const d=getData(); const txt=`titel: ${d.title}\nbeskrivning:\n${cleanText(stripMarkdownEmoji(d.description))}\npris: ${d.price} SEK\nskick: ${d.condition}\nstad/ort: ${d.city}\ntaggar: ${d.tags}`; copyText(txt); return; }
+  if(e.target.id==='clear-all'){ if(!confirm('rensa alla fält? sparade utkast påverkas inte.')) return; resetForm(); images=[]; renderGallery(); Object.keys(marketplace).forEach(k=>{ marketplace[k].done=false; document.getElementById(`${k}-status`).classList.remove('done'); }); updateProgress(); toast('rensat'); return; }
+  if(e.target.id==='save-draft'){ saveDraft(); return; }
+});
+
+// ---------- Image handling (append, not override); thumbnails saved in drafts ----------
+let images = []; // {id, name, data}
+const gallery = document.getElementById('gallery');
+const fileInput = document.getElementById('photos');
+const drop = document.getElementById('drop');
+
+drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.classList.add('hover'); });
+drop.addEventListener('dragleave', ()=> drop.classList.remove('hover'));
+drop.addEventListener('drop', (e)=>{ e.preventDefault(); drop.classList.remove('hover'); handleFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', (e)=> handleFiles(e.target.files));
+
+function handleFiles(fileList){
+  const files = Array.from(fileList||[]).slice(0,10 - images.length);
+  if(files.length===0) return;
+  files.forEach(f=> compressToThumb(f).then(data=>{
+    images.push({ id: Date.now()+Math.random(), name: f.name, data });
+    renderGallery();
+  }));
+}
+
+function compressToThumb(file, max=1200, quality=0.8){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        let { width, height } = img;
+        const scale = Math.min(1, max/Math.max(width,height));
+        width = Math.round(width*scale); height = Math.round(height*scale);
+        const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+        const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror=reject;
+      img.src=reader.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderGallery(){
+  gallery.innerHTML='';
+  images.forEach((imgObj, idx)=>{
+    const div=document.createElement('div'); div.className='thumb';
+    div.innerHTML=`<img src="${imgObj.data}" alt="bild ${idx+1}"><div class="toolbar">
+      <button class="tool" data-move-left="${imgObj.id}" title="flytta vänster"><i class="fa-solid fa-chevron-left"></i></button>
+      <button class="tool" data-move-right="${imgObj.id}" title="flytta höger"><i class="fa-solid fa-chevron-right"></i></button>
+      <button class="tool" data-remove="${imgObj.id}" title="ta bort"><i class="fa-solid fa-x"></i></button>
+    </div>`;
+    gallery.appendChild(div);
+  });
+}
 
 document.addEventListener('click', (e)=>{
-  const open = e.target.closest('[data-open]'); if(open){ const m=open.getAttribute('data-open'); const payload=buildFor(m); if(payload) navigator.clipboard.writeText(payload).then(()=>showNotification(`format för ${m} kopierat`)); window.open({tradera:'https://www.tradera.com/selling/new', blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons', facebook:'https://www.facebook.com/marketplace/create/item', ebay:'https://www.ebay.com/sell'}[m], '_blank'); return; }
-  const complete = e.target.closest('[data-complete]'); if(complete){ updateMarketplaceUI(complete.getAttribute('data-complete')); return; }
-
-  if(e.target.id==='start-pub'){ document.getElementById('step-start').classList.remove('active'); document.getElementById('step-marketplace').classList.add('active'); return; }
-  if(e.target.id==='back-btn'){ document.getElementById('step-marketplace').classList.remove('active'); document.getElementById('step-start').classList.add('active'); return; }
-  if(e.target.id==='clear-all'){ if(!confirm('Rensa alla fält? Sparade utkast påverkas inte.')) return; resetForm(); showNotification('rensat'); return; }
-  if(e.target.id==='save-draft'){ const d=getData(); if(!d.title||!d.price||!d.condition) return showNotification('titel, pris, skick krävs'); const drafts=JSON.parse(localStorage.getItem('adDrafts')||'[]'); drafts.unshift({ id:Date.now(), ...d, date:new Date().toISOString(), description: document.getElementById('description').value }); localStorage.setItem('adDrafts', JSON.stringify(drafts.slice(0,10))); showNotification('utkast sparat'); return; }
-  if(e.target.id==='copy-all'){ const d=getData(); const desc=cleanText(stripMarkdownEmoji(document.getElementById('description').value)); const txt = `Titel: ${d.title}\nBeskrivning:\n${desc}\nPris: ${d.price} SEK\nSkick: ${d.condition}\nStad/ort: ${d.city}\nTaggar: ${d.tags}`; copy(txt, 'allt kopierat'); return; }
+  const rm=e.target.closest('[data-remove]'); if(rm){ const id=+rm.getAttribute('data-remove'); images=images.filter(x=>x.id!==id); renderGallery(); return; }
+  const ml=e.target.closest('[data-move-left]'); if(ml){ const id=+ml.getAttribute('data-move-left'); const i=images.findIndex(x=>x.id===id); if(i>0){ const t=images[i-1]; images[i-1]=images[i]; images[i]=t; renderGallery(); } return; }
+  const mr=e.target.closest('[data-move-right]'); if(mr){ const id=+mr.getAttribute('data-move-right'); const i=images.findIndex(x=>x.id===id); if(i>=0 && i<images.length-1){ const t=images[i+1]; images[i+1]=images[i]; images[i]=t; renderGallery(); } return; }
 });
 
-// Autosave every 2 minutes (silent)
+// ---------- Drafts (includes thumbnails) ----------
+const LS={ DRAFTS:'adDrafts' };
+
+function saveDraft(){
+  const d=getData();
+  if(!d.title || !d.price || !d.condition) return toast('titel, pris, skick krävs');
+  let drafts = JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]');
+  const id = Date.now();
+  drafts.unshift({ id, ...d, images, date: new Date().toISOString() });
+  drafts = drafts.slice(0,10);
+  localStorage.setItem(LS.DRAFTS, JSON.stringify(drafts));
+  renderDrafts(); toast('annons sparad som utkast');
+}
+
+function renderDrafts(){
+  const list=document.getElementById('previous-ads-list'); list.innerHTML='';
+  const drafts=JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]');
+  if(drafts.length===0){ list.innerHTML='<div class="previous-meta">inga utkast än</div>'; return; }
+  drafts.forEach(d=>{
+    const div=document.createElement('div'); div.className='previous-item';
+    const date=new Date(d.date).toLocaleString('sv-SE',{hour:'2-digit',minute:'2-digit',year:'numeric',month:'short',day:'2-digit'});
+    div.innerHTML = `<div>
+        <div><strong>${d.title||'utan titel'}</strong></div>
+        <div class="previous-meta">${date} • ${d.city||'utan stad'}</div>
+      </div>
+      <div>
+        <button class="chip" data-load="${d.id}" title="ladda"><i class="fa-solid fa-download"></i></button>
+        <button class="chip" data-del="${d.id}" title="ta bort"><i class="fa-solid fa-trash"></i></button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+document.addEventListener('click', (e)=>{
+  const load=e.target.closest('[data-load]'); if(load){ const id=+load.getAttribute('data-load'); const drafts=JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]'); const d=drafts.find(x=>x.id===id); if(d){ setData(d); images=d.images||[]; renderGallery(); toast('utkast laddat'); } return; }
+  const del=e.target.closest('[data-del]'); if(del){ const id=+del.getAttribute('data-del'); let drafts=JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]'); drafts=drafts.filter(x=>x.id!==id); localStorage.setItem(LS.DRAFTS, JSON.stringify(drafts)); renderDrafts(); toast('utkast borttaget'); return; }
+});
+
+// ---------- Clear & Reset ----------
+function resetForm(){ setData({ title:'', price:'', condition:'', notes:'', city:'', tags:'', description:'' }); }
+updateProgress();
+renderDrafts();
+renderGallery();
+
+// Autosave each 2 min (text only)
 setInterval(()=>{
-  const d = getData();
-  const has = d.title || d.price || d.description || d.tags || (d.condition && d.condition!=='Välj skick...');
+  const d=getData();
+  const has = d.title || d.price || d.description || d.tags || (d.condition && d.condition!=='välj skick…');
   if(!has) return;
-  localStorage.setItem('avp.currentDraft', JSON.stringify({ ...d, description: document.getElementById('description').value, ts: Date.now() }));
+  localStorage.setItem('avp.currentDraft', JSON.stringify({ ...d, ts: Date.now() }));
 }, 120000);
-
-// Startup
-
-// Geolocation -> auto-fill "Stad eller ort"
-async function reverseGeocode(lat, lon){
-  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-  const res = await fetch(url, { headers: { 'Accept': 'application/json' }});
-  if(!res.ok) throw new Error('reverse geocode failed');
-  const data = await res.json();
-  const a = data.address || {};
-  // Prefer city -> town -> municipality -> village
-  return a.city || a.town || a.municipality || a.village || a.county || '';
-}
-function autoFillCity(){
-  if(!navigator.geolocation) return;
-  const field = document.getElementById('city');
-  if(!field || field.value) return; // don't override user input
-  navigator.geolocation.getCurrentPosition(async (pos)=>{
-    try{
-      const name = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
-      if(name && !field.value){
-        field.value = name;
-        localStorage.setItem('avp.defaultCity', name);
-        showNotification(`stad/ort föreslagen: ${name}`);
-      }
-    }catch(e){ console.warn('geolocation reverse failed', e); }
-  }, (err)=>{ console.warn('geolocation denied', err); }, { enableHighAccuracy:false, maximumAge:600000, timeout:8000 });
-}
-
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  resetForm();
-  autoFillCity();
-  // default city memory
-  const savedCity = localStorage.getItem('avp.defaultCity');
-  if(savedCity) document.getElementById('city').value = savedCity;
-  document.getElementById('city').addEventListener('change', ()=> localStorage.setItem('avp.defaultCity', document.getElementById('city').value.trim()));
-});
