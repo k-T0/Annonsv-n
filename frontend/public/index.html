@@ -47,15 +47,13 @@
             </div>
             <div class="field">
               <label for="condition">Skick*</label>
-              <div class="input-wrap select-wrap">
-                <select id="condition">
+              <select id="condition">
                 <option value="">Välj skick…</option>
                 <option>Nytt</option>
                 <option>Som nytt</option>
                 <option>Mycket bra</option>
                 <option>Använt</option>
               </select>
-              </div>
             </div>
           </div>
 
@@ -72,10 +70,8 @@
               <button id="gen-tags" class="btn soft small quick-hide">Generera taggar med AI</button>
             </div>
             <div class="field pro-only">
-              <label for="city">Stad eller ort (valfritt)</label>
-              <div class="input-wrap">
-                <input id="city" type="text" placeholder="T.ex. Stockholm eller Malmö"/>
-              </div>
+              <label for="city">Ort (valfritt)</label>
+              <input id="city" type="text" placeholder="T.ex. Stockholm"/>
             </div>
           </div>
 
@@ -147,7 +143,7 @@
 
           <div class="quality card-lite subtle">
             <div class="q-top">
-              <div class="q-score" id="q-score">0</div>
+              <div class="q-score" id="q-score">72</div>
               <div class="q-label">Kvalitet</div>
             </div>
             <ul class="q-suggestions" id="q-suggestions">
@@ -188,8 +184,8 @@
                 <div class="m-title">Tradera</div><div class="m-sub">Sveriges största auktionssajt</div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="tradera">Öppna ↗</button>
-                <button class="pill complete-btn" data-complete="tradera">✓ Klar</button>
+                <button class="pill open" data-open="tradera">Öppna</button>
+                <button class="pill complete-btn" data-complete="tradera">Klar</button>
               </div>
             </div>
 
@@ -198,8 +194,8 @@
                 <div class="m-title">Blocket</div><div class="m-sub">Sveriges ledande annonsplattform</div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="blocket">Öppna ↗</button>
-                <button class="pill complete-btn" data-complete="blocket">✓ Klar</button>
+                <button class="pill open" data-open="blocket">Öppna</button>
+                <button class="pill complete-btn" data-complete="blocket">Klar</button>
               </div>
             </div>
 
@@ -208,8 +204,8 @@
                 <div class="m-title">Facebook Marketplace</div><div class="m-sub">Miljontals användare varje dag</div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="facebook">Öppna ↗</button>
-                <button class="pill complete-btn" data-complete="facebook">✓ Klar</button>
+                <button class="pill open" data-open="facebook">Öppna</button>
+                <button class="pill complete-btn" data-complete="facebook">Klar</button>
               </div>
             </div>
 
@@ -218,8 +214,8 @@
                 <div class="m-title">eBay</div><div class="m-sub">Global marknadsplats</div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="ebay">Öppna ↗</button>
-                <button class="pill complete-btn" data-complete="ebay">✓ Klar</button>
+                <button class="pill open" data-open="ebay">Öppna</button>
+                <button class="pill complete-btn" data-complete="ebay">Klar</button>
               </div>
             </div>
           </div>
@@ -231,7 +227,6 @@
         </div>
       </div>
     </section>
-    <div id="aria-live" aria-live="polite" class="sr-only"></div>
   </main>
 
   <footer class="app-footer"><div class="foot">© AnnonsVän Pro</div></footer>
