@@ -1,235 +1,648 @@
-// Config
-const BACKEND = (document.querySelector('meta[name="backend"]')?.content || '').replace(/\/+$/, '');
-
-// Toast
-function toast(msg){ const el=document.getElementById('toast'); document.getElementById('toast-text').textContent=msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1800); }
-
-// Sanitize
-function stripMarkdownEmoji(s=''){
-  s=s.replace(/(^|\s)#{1,6}\s*/g,'$1')
-     .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1')
-     .replace(/`{1,3}[^`]*`{1,3}/g,'')
-     .replace(/^\s*[-*•]\s+/gm,'· ');
-  try{ s=s.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}]/gu,''); }catch{}
-  s=s.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n');
-  return s.trim();
+// (Trimmed version of JS from previous step;
+still includes lightbox/rotate & drafts hero)
+const BACKEND=(document.querySelector('meta[name="backend"]').content||'').replace(/\/+$/,
+'');
+function toast(t){
+  const e=document.getElementById("toast");
+  document.getElementById("toast-text").textContent=t,
+  e.classList.add("show"),
+  setTimeout(()=>e.classList.remove("show"),1800)
 }
-function cleanText(s){ return (s||'').toString().replace(/[^\n\r\t\u0020-\u007EåäöÅÄÖ.,;:!?()\-\w]/g,''); }
-
-// Data helpers
-function getData(){
-  const condSel=document.getElementById('condition');
-  const condition=condSel?.options[condSel.selectedIndex]?.text||'';
-  return {
-    title: document.getElementById('title').value.trim(),
-    price: document.getElementById('price').value.trim(),
-    condition,
-    notes: document.getElementById('notes').value,
-    city: document.getElementById('city').value,
-    tags: document.getElementById('tags').value,
-    description: document.getElementById('description').value
-  };
-}
-function setData(d={}){
-  document.getElementById('title').value = d.title||'';
-  document.getElementById('price').value = d.price||'';
-  const sel=document.getElementById('condition');
-  if(sel){ let idx=0; for(let i=0;i<sel.options.length;i++){ if(sel.options[i].text=== (d.condition||'')){ idx=i; break;} } sel.selectedIndex=idx; }
-  document.getElementById('notes').value = d.notes||'';
-  document.getElementById('city').value = d.city||'';
-  document.getElementById('tags').value = d.tags||'';
-  document.getElementById('description').value = d.description||'';
-  renderTags((d.tags||'').split(',').map(t=>t.trim()));
-}
-
-// AI
-async function callAI(payload){
-  const res=await fetch(`${BACKEND}/generate-description`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  if(!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-async function handleGenerate(style, btn){
-  const { title, price, condition, notes, city } = getData();
-  if(!title || !price || !condition){ toast('fyll i titel, pris och skick'); return; }
-  const old=btn.textContent; btn.disabled=true; btn.textContent='⏳ genererar…';
-  try{
-    const data = await callAI({ style, title: cleanText(title), condition: cleanText(condition), price: cleanText(price), notes, city });
-    const desc = cleanText(stripMarkdownEmoji((data.description||'').trim()));
-    document.getElementById('description').value = desc;
-    toast(`beskrivning (${style}) klar`);
-  }catch(e){ console.warn(e); toast('kunde inte nå ai'); }
-  finally{ btn.disabled=false; btn.textContent=old; }
-}
-
-// Tags
-function renderTags(tags){ const c=document.getElementById('tag-container'); c.innerHTML=''; tags.filter(Boolean).forEach(t=>{ const el=document.createElement('span'); el.className='tag'; el.innerHTML=`${t} <span class="x" data-del="${t}">×</span>`; c.appendChild(el); }); }
-function updateTags(str){ document.getElementById('tags').value=str; renderTags(str.split(',').map(t=>t.trim())); }
-document.addEventListener('input', (e)=>{ if(e.target.id==='tags'){ renderTags(e.target.value.split(',').map(t=>t.trim())); } });
-document.addEventListener('click', (e)=>{ const x=e.target.closest('.x'); if(x){ const t = x.getAttribute('data-del'); const arr=document.getElementById('tags').value.split(',').map(s=>s.trim()).filter(v=>v&&v!==t); updateTags(arr.join(', ')); } });
-
-// Copy
-function copyText(text){ navigator.clipboard.writeText(text).then(()=>toast('kopierat')); }
-document.addEventListener('click', (e)=>{
-  const b=e.target.closest('[data-copy]'); if(!b) return;
-  const type=b.getAttribute('data-copy');
-  let text=''; if(type==='title') text=document.getElementById('title').value;
-  if(type==='price') text=document.getElementById('price').value+' SEK';
-  if(type==='tags') text=document.getElementById('tags').value;
-  if(type==='description') text=cleanText(stripMarkdownEmoji(document.getElementById('description').value));
-  if(!text) return toast('inget att kopiera');
-  copyText(text);
-});
-
-// Marketplace
-const marketplace={
-  tradera:{ url:'https://www.tradera.com/selling/new', done:false },
-  blocket:{ url:'https://www.blocket.se/mina-annonser/lagg-in-annons', done:false },
-  facebook:{ url:'https://www.facebook.com/marketplace/create/item', done:false },
-  ebay:{ url:'https://www.ebay.com/sell', done:false }
-};
-function buildFor(market){
-  const d=getData(); const desc=cleanText(stripMarkdownEmoji(d.description));
-  if(!d.title || !d.price || !d.condition || !desc){ toast('fyll i titel, pris, skick, beskrivning'); return ''; }
-  switch(market){
-    case 'tradera': return `${d.title}\n\n${desc}\n\nSkick: ${d.condition}\nUtgångspris: ${d.price} SEK\nTaggar: ${d.tags}`;
-    case 'blocket': return `${d.title} – ${d.price} SEK\n\n${desc}\n\nSkick: ${d.condition}\nTaggar: ${d.tags}`;
-    case 'facebook': return `${d.title}\n${d.price} SEK\n\n${desc}`;
-    case 'ebay': return `${d.title} [${d.condition}]\n\n${desc}\n\nPrice: ${d.price} SEK\nTags: ${d.tags}`;
-    default: return '';
+function stripMD(t=""){
+  t=t.replace(/(^|\s)#{
+    1,6
   }
+  \s*/g,
+  "$1").replace(/[*_]{
+    1,3
+  }
+  ([^*_]+)[*_]{
+    1,3
+  }
+  /g,
+  "$1").replace(/`{
+    1,3
+  }
+  [^`]*`{
+    1,3
+  }
+  /g,
+  "").replace(/^\s*[-*•]\s+/gm,
+  "· ");
+  try{
+    t=t.replace(/[\p{
+      Extended_Pictographic
+    }
+    \p{
+      Emoji_Presentation
+    }
+    ]/gu,
+    "")
+  }
+  catch{
+  }
+  return t.replace(/[ \t]+\n/g,
+  "\n").replace(/\n{
+    3,
+  }
+  /g,
+  "\n\n").trim()
+}
+function clean(t){
+  return(t||"").toString().replace([^\n\r\t\u0020-\u007EåäöÅÄÖ.,
+  ;
+  :!?()\-\w]/g,
+  "")
+}
+function getData(){
+  const t=document.getElementById("condition"),
+  e=(t?.options[t.selectedIndex]?.text)||"";
+  return{
+    title:document.getElementById("title").value.trim(),
+    price:document.getElementById("price").value.trim(),
+    condition:e,
+    notes:document.getElementById("notes").value,
+    city:document.getElementById("city").value,
+    tags:document.getElementById("tags").value,
+    description:document.getElementById("description").value
+  }
+}
+function setData(t={
+}
+){
+  document.getElementById("title").value=t.title||"",
+  document.getElementById("price").value=t.price||"";
+  const e=document.getElementById("condition");
+  if(e){
+    let n=0;for(let d=0;
+    d<e.options.length;
+    d++)if(e.options[d].text===(t.condition||"")){
+      n=d;
+      break
+    }
+    e.selectedIndex=n
+  }
+  document.getElementById("notes").value=t.notes||"",
+  document.getElementById("city").value=t.city||"",
+  document.getElementById("tags").value=t.tags||"",
+  document.getElementById("description").value=t.description||""
+}
+async function callAI(t){
+  const e=await fetch(`${
+    BACKEND
+  }
+  /generate-description`,
+  {
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    }
+    ,
+    body:JSON.stringify(t)
+  }
+  );
+  if(!e.ok)throw new Error(await e.text());
+  return e.json()
+}
+async function generate(t,
+e){
+  const{
+    title:n,
+    price:d,
+    condition:o,
+    notes:i,
+    city:a
+  }
+  =getData();
+  if(!n||!d||!o)return void toast("Fyll i titel,
+  pris och skick");
+  const l=e.textContent;
+  e.disabled=!0,
+  e.textContent="⏳ Genererar…";
+  try{
+    const e=await callAI({
+      style:t,
+      title:clean(n),
+      condition:clean(o),
+      price:clean(d),
+      notes:i,
+      city:a
+    }
+    );
+    document.getElementById("description").value=clean(stripMD((e.description||"").trim())),
+    toast(`Beskrivning (${
+      t
+    }
+    ) klar`)
+  }
+  catch(t){
+    console.warn(t),
+    toast("Kunde inte nå AI")
+  }
+  finally{
+    e.disabled=!1,
+    e.textContent=l
+  }
+}
+document.addEventListener("click",
+(t=>{
+  const e=t.target.closest(".ai");
+  e&&generate(e.dataset.style,
+  e)
+}
+));
+function copy(t){
+  navigator.clipboard.writeText(t).then((()=>toast("Kopierat")))
+}
+document.addEventListener("click",
+(t=>{
+  const e=t.target.closest("[data-copy]");
+  if(!e)return;
+  const n=e.dataset.copy;
+  let d="";
+  "title"===n&&(d=document.getElementById("title").value),
+  "price"===n&&(d=document.getElementById("price").value+" SEK"),
+  "tags"===n&&(d=document.getElementById("tags").value),
+  "description"===n&&(d=clean(stripMD(document.getElementById("description").value))),
+  d?copy(d):toast("Inget att kopiera")
+}
+));
+const marketplace={
+  tradera:{
+    url:"https://www.tradera.com/selling/new",
+    done:!1
+  }
+  ,
+  blocket:{
+    url:"https://www.blocket.se/mina-annonser/lagg-in-annons",
+    done:!1
+  }
+  ,
+  facebook:{
+    url:"https://www.facebook.com/marketplace/create/item",
+    done:!1
+  }
+  ,
+  ebay:{
+    url:"https://www.ebay.com/sell",
+    done:!1
+  }
+}
+;
+function formatFor(t){
+  const e=getData(),
+  n=clean(stripMD(e.description));
+  return e.title&&e.price&&e.condition&&n?"tradera"===t?`${
+    e.title
+  }
+  \n\n${
+    n
+  }
+  \n\nSkick: ${
+    e.condition
+  }
+  \nUtgångspris: ${
+    e.price
+  }
+  SEK\nTaggar: ${
+    e.tags
+  }
+  `:"blocket"===t?`${
+    e.title
+  }
+  – ${
+    e.price
+  }
+  SEK\n\n${
+    n
+  }
+  \n\nSkick: ${
+    e.condition
+  }
+  \nTaggar: ${
+    e.tags
+  }
+  `:"facebook"===t?`${
+    e.title
+  }
+  \n${
+    e.price
+  }
+  SEK\n\n${
+    n
+  }
+  `:"ebay"===t?`${
+    e.title
+  }
+  [${
+    e.condition
+  }
+  ]\n\n${
+    n
+  }
+  \n\nPrice: ${
+    e.price
+  }
+  SEK\nTags: ${
+    e.tags
+  }
+  `:"":"Fyll i titel,
+  pris,
+  skick,
+  beskrivning"
 }
 function updateProgress(){
-  const done=Object.values(marketplace).filter(x=>x.done).length;
-  const pct=Math.round(done/4*100);
-  document.getElementById('progress-bar').style.width=`${pct}%`;
-  document.getElementById('progress-text').textContent=`${pct}% klart`;
-}
-
-// Click handlers for publish & general buttons
-document.addEventListener('click', (e)=>{
-  if(e.target.classList.contains('ai')){ handleGenerate(e.target.getAttribute('data-style'), e.target); return; }
-
-  const open=e.target.closest('[data-open]');
-  if(open){ const m=open.getAttribute('data-open'); const payload=buildFor(m); if(!payload) return;
-    navigator.clipboard.writeText(payload).then(()=>toast(`format för ${m} kopierat`));
-    window.open(marketplace[m].url,'_blank'); return;
+  const t=Object.values(marketplace).filter((t=>t.done)).length,
+  e=Math.round(t/4*100);
+  document.getElementById("progress-bar").style.width=`${
+    e
   }
-  const complete=e.target.closest('[data-complete]');
-  if(complete){ const m=complete.getAttribute('data-complete'); marketplace[m].done=!marketplace[m].done; document.getElementById(`${m}-status`).classList.toggle('done', marketplace[m].done); updateProgress(); return; }
-
-  if(e.target.id==='copy-all'){ const d=getData(); const txt=`titel: ${d.title}\nbeskrivning:\n${cleanText(stripMarkdownEmoji(d.description))}\npris: ${d.price} SEK\nskick: ${d.condition}\nstad/ort: ${d.city}\ntaggar: ${d.tags}`; copyText(txt); return; }
-  if(e.target.id==='clear-all'){ if(!confirm('rensa alla fält? sparade utkast påverkas inte.')) return; resetForm(); images=[]; renderGallery(); Object.keys(marketplace).forEach(k=>{ marketplace[k].done=false; document.getElementById(`${k}-status`).classList.remove('done'); }); updateProgress(); toast('rensat'); return; }
-  if(e.target.id==='save-draft'){ saveDraft(); return; }
-});
-
-// ---------- Image handling (append, not override); thumbnails saved in drafts ----------
-let images = []; // {id, name, data}
-const gallery = document.getElementById('gallery');
-const fileInput = document.getElementById('photos');
-const drop = document.getElementById('drop');
-
-drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.classList.add('hover'); });
-drop.addEventListener('dragleave', ()=> drop.classList.remove('hover'));
-drop.addEventListener('drop', (e)=>{ e.preventDefault(); drop.classList.remove('hover'); handleFiles(e.dataTransfer.files); });
-fileInput.addEventListener('change', (e)=> handleFiles(e.target.files));
-
-function handleFiles(fileList){
-  const files = Array.from(fileList||[]).slice(0,10 - images.length);
-  if(files.length===0) return;
-  files.forEach(f=> compressToThumb(f).then(data=>{
-    images.push({ id: Date.now()+Math.random(), name: f.name, data });
-    renderGallery();
-  }));
+  %`,
+  document.getElementById("progress-text").textContent=`${
+    e
+  }
+  % klart`
 }
-
-function compressToThumb(file, max=1200, quality=0.8){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>{
-      const img=new Image();
-      img.onload=()=>{
-        let { width, height } = img;
-        const scale = Math.min(1, max/Math.max(width,height));
-        width = Math.round(width*scale); height = Math.round(height*scale);
-        const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
-        const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,width,height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror=reject;
-      img.src=reader.result;
-    };
-    reader.onerror=reject;
-    reader.readAsDataURL(file);
-  });
+document.addEventListener("click",
+(t=>{
+  const e=t.target.closest("[data-open]");
+  if(e){
+    const t=e.dataset.open,
+    n=formatFor(t);
+    if(!n)return;
+    navigator.clipboard.writeText(n).then((()=>toast(`Format för ${
+      t
+    }
+    kopierat`))),
+    window.open(marketplace[t].url,
+    "_blank")
+  }
+  const n=t.target.closest("[data-complete]");
+  if(n){
+    const t=n.dataset.complete;
+    marketplace[t].done=!marketplace[t].done,
+    document.getElementById(`${
+      t
+    }
+    -status`).classList.toggle("done",
+    marketplace[t].done),
+    updateProgress()
+  }
 }
-
+));
+let images=[],
+gallery=document.getElementById("gallery"),
+fileInput=document.getElementById("photos"),
+drop=document.getElementById("drop");
+function handleFiles(t){
+  const e=Array.from(t||[]).slice(0,10-images.length);
+  0!==e.length&&e.forEach((t=>thumb(t).then((t=>{
+    images.push({
+      id:Date.now()+Math.random(),
+      name:t.name||'bild',
+      data:t,
+      rotation:0
+    }
+    ),
+    renderGallery()
+  }
+  ))))
+}
+function thumb(t,
+e=1200,
+n=.8){
+  return new Promise(((d,
+  o)=>{
+    const i=new FileReader;
+    i.onload=()=>{
+      const t=new Image;
+      t.onload=()=>{
+        let n=t.width,
+        o=t.height;
+        const i=Math.min(1,
+        e/Math.max(n,
+        o));
+        n=Math.round(n*i),
+        o=Math.round(o*i);
+        const a=document.createElement("canvas"),
+        l=a.getContext("2d");
+        a.width=n,
+        a.height=o,
+        l.drawImage(t,0,0,
+        n,
+        o),
+        d(a.toDataURL("image/jpeg",
+        .8))
+      }
+      ,
+      t.onerror=o,
+      t.src=i.result
+    }
+    ,
+    i.onerror=o,
+    i.readAsDataURL(t)
+  }
+  ))
+}
+drop.addEventListener("dragover",
+(t=>{
+  t.preventDefault(),
+  drop.classList.add("hover")
+}
+)),
+drop.addEventListener("dragleave",
+(()=>drop.classList.remove("hover"))),
+drop.addEventListener("drop",
+(t=>{
+  t.preventDefault(),
+  drop.classList.remove("hover"),
+  handleFiles(t.dataTransfer.files)
+}
+)),
+fileInput.addEventListener("change",
+(t=>handleFiles(t.target.files)));
 function renderGallery(){
-  gallery.innerHTML='';
-  images.forEach((imgObj, idx)=>{
-    const div=document.createElement('div'); div.className='thumb';
-    div.innerHTML=`<img src="${imgObj.data}" alt="bild ${idx+1}"><div class="toolbar">
-      <button class="tool" data-move-left="${imgObj.id}" title="flytta vänster"><i class="fa-solid fa-chevron-left"></i></button>
-      <button class="tool" data-move-right="${imgObj.id}" title="flytta höger"><i class="fa-solid fa-chevron-right"></i></button>
-      <button class="tool" data-remove="${imgObj.id}" title="ta bort"><i class="fa-solid fa-x"></i></button>
-    </div>`;
-    gallery.appendChild(div);
-  });
+  gallery.innerHTML="",
+  images.forEach(((t,
+  e)=>{
+    const n=document.createElement("div");
+    n.className="thumb",
+    n.innerHTML=`<img src="${
+      t.data
+    }
+    " alt="Bild ${
+      e+1
+    }
+    " data-view="${
+      t.id
+    }
+    "><div class="tools"><button class="tool" data-left="${
+      t.id
+    }
+    " title="Vänster"><i class="fa-solid fa-chevron-left"></i></button><button class="tool" data-right="${
+      t.id
+    }
+    " title="Höger"><i class="fa-solid fa-chevron-right"></i></button><button class="tool" data-remove="${
+      t.id
+    }
+    " title="Ta bort"><i class="fa-solid fa-x"></i></button></div>`,
+    gallery.appendChild(n)
+  }
+  ))
 }
-
-document.addEventListener('click', (e)=>{
-  const rm=e.target.closest('[data-remove]'); if(rm){ const id=+rm.getAttribute('data-remove'); images=images.filter(x=>x.id!==id); renderGallery(); return; }
-  const ml=e.target.closest('[data-move-left]'); if(ml){ const id=+ml.getAttribute('data-move-left'); const i=images.findIndex(x=>x.id===id); if(i>0){ const t=images[i-1]; images[i-1]=images[i]; images[i]=t; renderGallery(); } return; }
-  const mr=e.target.closest('[data-move-right]'); if(mr){ const id=+mr.getAttribute('data-move-right'); const i=images.findIndex(x=>x.id===id); if(i>=0 && i<images.length-1){ const t=images[i+1]; images[i+1]=images[i]; images[i]=t; renderGallery(); } return; }
-});
-
-// ---------- Drafts (includes thumbnails) ----------
-const LS={ DRAFTS:'adDrafts' };
-
+document.addEventListener("click",
+(t=>{
+  const e=t.target.closest("[data-remove]");
+  if(e){
+    const t=+e.getAttribute("data-remove");
+    return images=images.filter((e=>e.id!==t)),
+    void renderGallery()
+  }
+  const n=t.target.closest("[data-left]");
+  if(n){
+    const t=+n.getAttribute("data-left"),
+    e=images.findIndex((e=>e.id===t));
+    if(e>0){
+      [images[e-1],
+      images[e]]=[images[e],
+      images[e-1]],
+      renderGallery()
+    }
+    return
+  }
+  const d=t.target.closest("[data-right]");
+  if(d){
+    const t=+d.getAttribute("data-right"),
+    e=images.findIndex((e=>e.id===t));
+    if(e>=0&&e<images.length-1){
+      [images[e],
+      images[e+1]]=[images[e+1],
+      images[e]],
+      renderGallery()
+    }
+    return
+  }
+  const o=t.target.closest("[data-view]");
+  o&&openLightbox(+o.getAttribute("data-view"))
+}
+));
+const lb=document.getElementById("lightbox"),
+lbImg=document.getElementById("lightbox-image");
+let lbIndex=-1;
+function openLightbox(t){
+  lbIndex=images.findIndex((e=>e.id===t)),
+  lbIndex<0||(lbImg.src=images[lbIndex].data,
+  lb.classList.add("show"),
+  lb.setAttribute("aria-hidden",
+  "false"))
+}
+function closeLightbox(){
+  lb.classList.remove("show"),
+  lb.setAttribute("aria-hidden",
+  "true")
+}
+document.getElementById("lb-close").addEventListener("click",
+closeLightbox),
+document.querySelector(".lightbox-backdrop").addEventListener("click",
+closeLightbox),
+document.getElementById("lb-prev").addEventListener("click",
+(()=>{
+  lbIndex>0&&(lbIndex--,
+  lbImg.src=images[lbIndex].data)
+}
+)),
+document.getElementById("lb-next").addEventListener("click",
+(()=>{
+  lbIndex<images.length-1&&(lbIndex++,
+  lbImg.src=images[lbIndex].data)
+}
+)),
+document.getElementById("lb-rotate").addEventListener("click",
+(()=>{
+  lbIndex<0||(rotateImageAt(lbIndex,90),
+  lbImg.src=images[lbIndex].data,
+  renderGallery())
+}
+));
+function rotateImageAt(t,
+e){
+  const n=images[t].data,
+  d=new Image;
+  d.onload=(()=>{
+    const n=e*Math.PI/180,
+    o=document.createElement("canvas"),
+    i=o.getContext("2d"),
+    a=d.width,
+    l=d.height,
+    r=e%180!=0;
+    o.width=r?l:a,
+    o.height=r?a:l,
+    i.translate(o.width/2,
+    o.height/2),
+    i.rotate(n),
+    i.drawImage(d,
+    -a/2,
+    -l/2),
+    images[t].data=o.toDataURL("image/jpeg",
+    .8)
+  }
+  ),
+  d.src=n
+}
+const LS={
+  DRAFTS:"avp.drafts"
+}
+;
 function saveDraft(){
-  const d=getData();
-  if(!d.title || !d.price || !d.condition) return toast('titel, pris, skick krävs');
-  let drafts = JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]');
-  const id = Date.now();
-  drafts.unshift({ id, ...d, images, date: new Date().toISOString() });
-  drafts = drafts.slice(0,10);
-  localStorage.setItem(LS.DRAFTS, JSON.stringify(drafts));
-  renderDrafts(); toast('annons sparad som utkast');
+  const t=getData();
+  if(!t.title||!t.price||!t.condition)return toast("Titel,
+  pris,
+  skick krävs");
+  let e=JSON.parse(localStorage.getItem(LS.DRAFTS)||"[]"),
+  n=Date.now();
+  e.unshift({
+    id:n,
+    ...t,
+    images,
+    date:new Date().toISOString()
+  }
+  ),
+  e=e.slice(0,12),
+  localStorage.setItem(LS.DRAFTS,
+  JSON.stringify(e)),
+  renderDrafts(),
+  toast("Annons sparad som utkast.")
 }
-
 function renderDrafts(){
-  const list=document.getElementById('previous-ads-list'); list.innerHTML='';
-  const drafts=JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]');
-  if(drafts.length===0){ list.innerHTML='<div class="previous-meta">inga utkast än</div>'; return; }
-  drafts.forEach(d=>{
-    const div=document.createElement('div'); div.className='previous-item';
-    const date=new Date(d.date).toLocaleString('sv-SE',{hour:'2-digit',minute:'2-digit',year:'numeric',month:'short',day:'2-digit'});
-    div.innerHTML = `<div>
-        <div><strong>${d.title||'utan titel'}</strong></div>
-        <div class="previous-meta">${date} • ${d.city||'utan stad'}</div>
-      </div>
-      <div>
-        <button class="chip" data-load="${d.id}" title="ladda"><i class="fa-solid fa-download"></i></button>
-        <button class="chip" data-del="${d.id}" title="ta bort"><i class="fa-solid fa-trash"></i></button>
-      </div>`;
-    list.appendChild(div);
-  });
+  const t=document.getElementById("draft-list");
+  t.innerHTML="";
+  const e=JSON.parse(localStorage.getItem(LS.DRAFTS)||"[]");
+  if(0===e.length)return void(t.innerHTML='<div class="meta">Inga utkast ännu</div>');
+  e.forEach((e=>{
+    const n=e.images&&e.images[0]&&e.images[0].data||"",
+    d=new Date(e.date).toLocaleString("sv-SE",
+    {
+      hour:"2-digit",
+      minute:"2-digit",
+      year:"numeric",
+      month:"short",
+      day:"2-digit"
+    }
+    ),
+    o=document.createElement("div");
+    o.className="draft-item",
+    o.innerHTML=`<div class="cover">${
+      n?`<img src="${
+        n
+      }
+      " alt="Omslag">`:'<i class="fa-regular fa-image" style="color:#AEB8C7;
+      font-size:20px"></i>'
+    }
+    </div><div style="flex:1"><div><strong>${
+      e.title||"Utan titel"
+    }
+    </strong></div><div class="meta">${
+      d
+    }
+    • ${
+      e.city||"Utan stad"
+    }
+    </div></div><div><button class="pill" data-load="${
+      e.id
+    }
+    " title="Ladda"><i class="fa-solid fa-download"></i></button> <button class="pill" data-del="${
+      e.id
+    }
+    " title="Ta bort"><i class="fa-solid fa-trash"></i></button></div>`,
+    t.appendChild(o)
+  }
+  ))
 }
-
-document.addEventListener('click', (e)=>{
-  const load=e.target.closest('[data-load]'); if(load){ const id=+load.getAttribute('data-load'); const drafts=JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]'); const d=drafts.find(x=>x.id===id); if(d){ setData(d); images=d.images||[]; renderGallery(); toast('utkast laddat'); } return; }
-  const del=e.target.closest('[data-del]'); if(del){ const id=+del.getAttribute('data-del'); let drafts=JSON.parse(localStorage.getItem(LS.DRAFTS)||'[]'); drafts=drafts.filter(x=>x.id!==id); localStorage.setItem(LS.DRAFTS, JSON.stringify(drafts)); renderDrafts(); toast('utkast borttaget'); return; }
-});
-
-// ---------- Clear & Reset ----------
-function resetForm(){ setData({ title:'', price:'', condition:'', notes:'', city:'', tags:'', description:'' }); }
-updateProgress();
-renderDrafts();
-renderGallery();
-
-// Autosave each 2 min (text only)
-setInterval(()=>{
-  const d=getData();
-  const has = d.title || d.price || d.description || d.tags || (d.condition && d.condition!=='välj skick…');
-  if(!has) return;
-  localStorage.setItem('avp.currentDraft', JSON.stringify({ ...d, ts: Date.now() }));
-}, 120000);
+document.addEventListener("click",
+(t=>{
+  const e=t.target.closest("[data-load]");
+  if(e){
+    const t=+e.getAttribute("data-load"),
+    n=JSON.parse(localStorage.getItem(LS.DRAFTS)||"[]"),
+    d=n.find((e=>e.id===t));
+    d&&(setData(d),
+    images=d.images||[],
+    renderGallery(),
+    toast("Utkast laddat"))
+  }
+  const n=t.target.closest("[data-del]");
+  if(n){
+    const t=+n.getAttribute("data-del");
+    let e=JSON.parse(localStorage.getItem(LS.DRAFTS)||"[]");
+    e=e.filter((e=>e.id!==t)),
+    localStorage.setItem(LS.DRAFTS,
+    JSON.stringify(e)),
+    renderDrafts(),
+    toast("Utkast borttaget")
+  }
+}
+)),
+document.addEventListener("click",
+(t=>{
+  "save-draft"===t.target.id&&saveDraft(),
+  "clear-all"===t.target.id&&(confirm("Rensa alla fält? Sparade utkast påverkas inte.")&&(setData({
+    title:"",
+    price:"",
+    condition:"",
+    notes:"",
+    city:"",
+    tags:"",
+    description:""
+  }
+  ),
+  images=[],
+  renderGallery(),
+  Object.keys(marketplace).forEach((t=>{
+    marketplace[t].done=!1,
+    document.getElementById(`${
+      t
+    }
+    -status`).classList.remove("done")
+  }
+  )),
+  updateProgress(),
+  toast("Rensat"))),
+  "copy-all"===t.target.id&&(()=>{
+    const t=getData(),
+    e=`Titel: ${
+      t.title
+    }
+    \nBeskrivning:\n${
+      clean(stripMD(t.description))
+    }
+    \nPris: ${
+      t.price
+    }
+    SEK\nSkick: ${
+      t.condition
+    }
+    \nStad/ort: ${
+      t.city
+    }
+    \nTaggar: ${
+      t.tags
+    }
+    `;
+    copy(e)
+  }
+  )()
+}
+)),
+renderDrafts(),
+updateProgress(),
+setInterval((()=>{
+  const t=getData(),
+  e=t.title||t.price||t.description||t.tags||t.condition&&"Välj skick…"!==t.condition;
+  e&&localStorage.setItem("avp.currentDraft",
+  JSON.stringify({
+    ...t,
+    ts:Date.now()
+  }
+  ))
+}
+),120000);
