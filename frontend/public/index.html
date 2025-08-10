@@ -1,173 +1,162 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AnnonsVän Pro</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <meta name="backend" content="https://annonsv-n.onrender.com">
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>annonsvän pro</title>
+  <meta name="backend" content="https://annonsv-n.onrender.com" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="floating"></div><div class="floating"></div><div class="floating"></div>
+  <div class="bg-glow bg1"></div>
+  <div class="bg-glow bg2"></div>
+  <div class="bg-glow bg3"></div>
 
-  <div class="notification" id="notification">
-    <i class="fas fa-check-circle"></i> <span id="notification-text">Klar!</span>
-  </div>
+  <header class="site-header">
+    <h1 class="brand">annonsvän pro</h1>
+    <p class="sub">ai-hjälp för blocket, facebook marketplace & tradera — snabbt, snyggt, säkert.</p>
+  </header>
 
-  <div class="container">
-    <div class="header">
-      <div class="logo">annonsvän pro</div>
-      <div class="topbar">
-        <div id="lang-switch" class="lang-switch">
-          <button data-lang="sv" class="lang active">sv</button>
-          <button data-lang="en" class="lang">en</button>
-        </div>
+  <main class="grid">
+    <section class="card">
+      <div class="card-head gradient">
+        <i class="fa-solid fa-pen-to-square"></i><span>skapa din annons</span>
       </div>
-      <p class="tagline">AI-hjälp för Blocket, Facebook Marketplace och Tradera – snabbt, snyggt, säkert.</p>
-    </div>
-
-    <div class="main-grid">
-      <div class="card">
-        <div class="card-header"><i class="fas fa-pencil-alt"></i> Skapa din annons</div>
-        <div class="card-body">
-          <div class="form-group">
-            <label for="title"><i class="fas fa-heading"></i> Titel*</label>
-            <div class="input-wrapper">
-              <input id="title" type="text" placeholder="T.ex. ASUS grafikkort">
-              <button class="btn copy-btn" data-copy="title"><i class="far fa-copy"></i></button>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="price"><i class="fas fa-tag"></i> Pris (SEK)*</label>
-              <div class="input-wrapper">
-                <input id="price" type="number" inputmode="numeric" placeholder="T.ex. 1500">
-                <button class="btn copy-btn" data-copy="price"><i class="far fa-copy"></i></button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="condition"><i class="fas fa-star"></i> Skick*</label>
-              <select id="condition">
-                <option value="">Välj skick...</option>
-                <option value="Nytt">Nytt</option>
-                <option value="Som nytt">Som nytt</option>
-                <option value="Mycket bra">Mycket bra</option>
-                <option value="Använt">Använt</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="notes"><i class="fas fa-info-circle"></i> Anmärkningar (valfritt)</label>
-            <textarea id="notes" placeholder="T.ex. lätt repa på baksidan, originalkartong saknas"></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="city"><i class="fas fa-location-dot"></i> Stad eller ort (valfritt)</label>
-              <input id="city" type="text" placeholder="T.ex. Stockholm eller Malmö">
-            </div>
-            <div class="form-group">
-              <label for="tags"><i class="fas fa-tags"></i> Taggar</label>
-              <div class="input-wrapper">
-                <input id="tags" type="text" placeholder="Komma-separerade">
-                <button class="btn copy-btn" data-copy="tags"><i class="far fa-copy"></i></button>
-              </div>
-              <div class="tag-container" id="tag-container"></div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="description"><i class="fas fa-align-left"></i> Beskrivning*</label>
-            <div class="input-wrapper">
-              <textarea id="description" placeholder="AI genererar här..."></textarea>
-              <button class="btn copy-btn" data-copy="description"><i class="far fa-copy"></i></button>
-            </div>
-            <div class="ai-actions">
-              <button class="ai-btn" data-style="minimal"><i class="fas fa-robot"></i> AI: minimal</button>
-              <button class="ai-btn" data-style="simple"><i class="fas fa-robot"></i> AI: enkel</button>
-              <button class="ai-btn" data-style="detailed"><i class="fas fa-robot"></i> AI: detaljerad</button>
-            </div>
-          </div>
-
-          <div class="btn-group">
-            <button class="btn secondary" id="save-draft"><i class="fas fa-save"></i> spara utkast</button>
-            <button class="btn danger" id="clear-all"><i class="fas fa-broom"></i> rensa allt</button>
-            <button class="btn" id="copy-all"><i class="fas fa-copy"></i> kopiera allt</button>
+      <div class="card-body">
+        <div class="group">
+          <label for="title"><i class="fa-solid fa-heading"></i> titel*</label>
+          <div class="input-wrap">
+            <input id="title" type="text" placeholder="t.ex. asus rtx 3080 ti" />
+            <button class="chip ghost" data-copy="title" title="kopiera titel"><i class="fa-regular fa-copy"></i></button>
           </div>
         </div>
+
+        <div class="row">
+          <div class="group">
+            <label for="price"><i class="fa-solid fa-tag"></i> pris (sek)*</label>
+            <div class="input-wrap">
+              <input id="price" type="number" inputmode="numeric" placeholder="t.ex. 4000" />
+              <button class="chip ghost" data-copy="price" title="kopiera pris"><i class="fa-regular fa-copy"></i></button>
+            </div>
+          </div>
+          <div class="group">
+            <label for="condition"><i class="fa-solid fa-star"></i> skick*</label>
+            <select id="condition">
+              <option value="">välj skick…</option>
+              <option value="Nytt">nytt</option>
+              <option value="Som nytt">som nytt</option>
+              <option value="Mycket bra">mycket bra</option>
+              <option value="Använt">använt</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="group">
+          <label for="notes"><i class="fa-solid fa-circle-info"></i> anmärkningar (valfritt)</label>
+          <textarea id="notes" class="notes" placeholder="kort fakta: originalkartong saknas, liten repa, garanti kvar 6 mån …"></textarea>
+        </div>
+
+        <div class="row">
+          <div class="group">
+            <label for="city"><i class="fa-solid fa-location-dot"></i> stad eller ort (valfritt)</label>
+            <input id="city" type="text" placeholder="t.ex. stockholm eller malmö" />
+          </div>
+          <div class="group">
+            <label for="tags"><i class="fa-solid fa-tags"></i> taggar</label>
+            <div class="input-wrap">
+              <input id="tags" type="text" placeholder="komma-separerade" />
+              <button class="chip ghost" data-copy="tags" title="kopiera taggar"><i class="fa-regular fa-copy"></i></button>
+            </div>
+            <div id="tag-container" class="tags"></div>
+          </div>
+        </div>
+
+        <div class="group">
+          <label for="photos"><i class="fa-solid fa-camera"></i> bilder</label>
+          <div id="drop" class="dropzone">
+            <input id="photos" type="file" accept="image/*" multiple />
+            <div class="drop-content">
+              <i class="fa-regular fa-images"></i>
+              <div>släpp bilder här eller klicka för att välja</div>
+              <small>png/jpg, max 10 st • miniatyrer sparas i utkast</small>
+            </div>
+          </div>
+          <div id="gallery" class="gallery"></div>
+        </div>
+
+        <div class="group">
+          <label for="description"><i class="fa-solid fa-align-left"></i> beskrivning*</label>
+          <div class="input-wrap">
+            <textarea id="description" placeholder="ai genererar här…"></textarea>
+            <button class="chip ghost" data-copy="description" title="kopiera beskrivning"><i class="fa-regular fa-copy"></i></button>
+          </div>
+          <div class="ai-row">
+            <button class="btn ai" data-style="minimal">ai: minimal</button>
+            <button class="btn ai" data-style="simple">ai: enkel</button>
+            <button class="btn ai" data-style="detailed">ai: detaljerad</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="save-draft" class="btn secondary">spara utkast</button>
+          <button id="clear-all" class="btn danger">rensa allt</button>
+          <button id="copy-all" class="btn">kopiera allt</button>
+        </div>
+
+        <div class="previous">
+          <h3><i class="fa-solid fa-clock-rotate-left"></i> tidigare utkast</h3>
+          <div id="previous-ads-list" class="previous-list"></div>
+        </div>
       </div>
+    </section>
 
-      <div class="card">
-        <div class="card-header"><i class="fas fa-store"></i> Publicera</div>
-        <div class="card-body">
-          <div class="workflow-container">
-            <div class="workflow-header">Publiceringsguide</div>
-            <div class="workflow-content">
-              <div class="workflow-step active" id="step-start">
-                <h3>Börja</h3>
-                <p>Kopiera rätt format och öppna marknadsplatsen.</p>
-                <button class="btn" id="start-pub"><i class="fas fa-play"></i> starta</button>
-              </div>
+    <section class="card">
+      <div class="card-head gradient">
+        <i class="fa-solid fa-store"></i><span>publicera</span>
+      </div>
+      <div class="card-body">
+        <div class="guide">
+          <div class="progress"><div class="bar" id="progress-bar"></div></div>
+          <div class="progress-text" id="progress-text">0% klart</div>
 
-              <div class="workflow-step" id="step-marketplace">
-                <h3>Välj marknadsplats</h3>
-                <div class="site-progress">
-                  <div class="site-status"><div class="site-status-icon status-not-started" id="tradera-status"></div><span>Tradera</span></div>
-                  <div class="site-status"><div class="site-status-icon status-not-started" id="blocket-status"></div><span>Blocket</span></div>
-                  <div class="site-status"><div class="site-status-icon status-not-started" id="facebook-status"></div><span>Facebook</span></div>
-                  <div class="site-status"><div class="site-status-icon status-not-started" id="ebay-status"></div><span>eBay</span></div>
-                </div>
+          <div class="site" data-market="tradera">
+            <div class="left"><div class="dot" id="tradera-status"></div><div>tradera</div></div>
+            <div class="right">
+              <button class="chip" data-open="tradera" title="öppna"><i class="fa-solid fa-up-right-from-square"></i></button>
+              <button class="chip" data-complete="tradera" title="klar"><i class="fa-solid fa-check"></i></button>
+            </div>
+          </div>
 
-                <div class="marketplace-list">
-                  <div class="marketplace-item" data-market="tradera">
-                    <div class="marketplace-icon"><i class="fab fa-trade-federation"></i></div>
-                    <div class="marketplace-info"><h4>Tradera</h4><p>Auktionssajt</p></div>
-                    <div class="action-buttons">
-                      <div class="action-btn open-btn" data-open="tradera"><i class="fas fa-external-link-alt"></i></div>
-                      <div class="action-btn complete-btn" data-complete="tradera"><i class="fas fa-check"></i></div>
-                    </div>
-                  </div>
-                  <div class="marketplace-item" data-market="blocket">
-                    <div class="marketplace-icon"><i class="fas fa-cube"></i></div>
-                    <div class="marketplace-info"><h4>Blocket</h4><p>Köp & sälj</p></div>
-                    <div class="action-buttons">
-                      <div class="action-btn open-btn" data-open="blocket"><i class="fas fa-external-link-alt"></i></div>
-                      <div class="action-btn complete-btn" data-complete="blocket"><i class="fas fa-check"></i></div>
-                    </div>
-                  </div>
-                  <div class="marketplace-item" data-market="facebook">
-                    <div class="marketplace-icon"><i class="fab fa-facebook"></i></div>
-                    <div class="marketplace-info"><h4>Facebook</h4><p>Marketplace</p></div>
-                    <div class="action-buttons">
-                      <div class="action-btn open-btn" data-open="facebook"><i class="fas fa-external-link-alt"></i></div>
-                      <div class="action-btn complete-btn" data-complete="facebook"><i class="fas fa-check"></i></div>
-                    </div>
-                  </div>
-                  <div class="marketplace-item" data-market="ebay">
-                    <div class="marketplace-icon"><i class="fab fa-ebay"></i></div>
-                    <div class="marketplace-info"><h4>eBay</h4><p>Globalt</p></div>
-                    <div class="action-buttons">
-                      <div class="action-btn open-btn" data-open="ebay"><i class="fas fa-external-link-alt"></i></div>
-                      <div class="action-btn complete-btn" data-complete="ebay"><i class="fas fa-check"></i></div>
-                    </div>
-                  </div>
-                </div>
+          <div class="site" data-market="blocket">
+            <div class="left"><div class="dot" id="blocket-status"></div><div>blocket</div></div>
+            <div class="right">
+              <button class="chip" data-open="blocket" title="öppna"><i class="fa-solid fa-up-right-from-square"></i></button>
+              <button class="chip" data-complete="blocket" title="klar"><i class="fa-solid fa-check"></i></button>
+            </div>
+          </div>
 
-                <div class="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
-                <div class="progress-text" id="progress-text">0% klart</div>
+          <div class="site" data-market="facebook">
+            <div class="left"><div class="dot" id="facebook-status"></div><div>facebook</div></div>
+            <div class="right">
+              <button class="chip" data-open="facebook" title="öppna"><i class="fa-solid fa-up-right-from-square"></i></button>
+              <button class="chip" data-complete="facebook" title="klar"><i class="fa-solid fa-check"></i></button>
+            </div>
+          </div>
 
-                <button class="btn secondary" id="back-btn"><i class="fas fa-arrow-left"></i> tillbaka</button>
-              </div>
+          <div class="site" data-market="ebay">
+            <div class="left"><div class="dot" id="ebay-status"></div><div>ebay</div></div>
+            <div class="right">
+              <button class="chip" data-open="ebay" title="öppna"><i class="fa-solid fa-up-right-from-square"></i></button>
+              <button class="chip" data-complete="ebay" title="klar"><i class="fa-solid fa-check"></i></button>
             </div>
           </div>
         </div>
       </div>
+    </section>
+  </main>
 
-    </div>
-  </div>
+  <div class="toast" id="toast"><i class="fa-solid fa-circle-check"></i><span id="toast-text">sparat</span></div>
 
   <script src="scripts.js"></script>
 </body>
