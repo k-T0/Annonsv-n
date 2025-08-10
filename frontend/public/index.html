@@ -47,13 +47,15 @@
             </div>
             <div class="field">
               <label for="condition">Skick*</label>
-              <select id="condition">
+              <div class="input-wrap select-wrap">
+                <select id="condition">
                 <option value="">Välj skick…</option>
                 <option>Nytt</option>
                 <option>Som nytt</option>
                 <option>Mycket bra</option>
                 <option>Använt</option>
               </select>
+              </div>
             </div>
           </div>
 
@@ -71,7 +73,9 @@
             </div>
             <div class="field pro-only">
               <label for="city">Stad eller ort (valfritt)</label>
-              <input id="city" type="text" placeholder="T.ex. Stockholm eller Malmö"/>
+              <div class="input-wrap">
+                <input id="city" type="text" placeholder="T.ex. Stockholm eller Malmö"/>
+              </div>
             </div>
           </div>
 
@@ -143,7 +147,7 @@
 
           <div class="quality card-lite subtle">
             <div class="q-top">
-              <div class="q-score" id="q-score">72</div>
+              <div class="q-score" id="q-score">0</div>
               <div class="q-label">Kvalitet</div>
             </div>
             <ul class="q-suggestions" id="q-suggestions">
