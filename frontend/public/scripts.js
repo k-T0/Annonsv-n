@@ -215,7 +215,7 @@
   const state=loadMarkets(); updateAll(); updateProgress();
   qsa('[data-open]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-open'); const txt=formatFor(m);
-    navigator.clipboard.writeText(String(txt).replace(/\r?\n/g,'\n')).then(()=>toastMsg(`Innehåll kopierat (${m})`));
+    navigator.clipboard.writeText(String(txt).replace(/\r?\n/g,'\n')).then(()=>toastMsg(`Innehåll kopierat (${m})`)).catch(()=>toastMsg('Kunde inte kopiera (ok)'));
     const url={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sell'};
     window.open(url[m],'_blank');
   }));
@@ -379,7 +379,8 @@ Hämtas i ${city.value}`:''}`;
   });
 
   // Seed a demo draft on first run (disabled by default)
-  // seedDemo();
+  // /* seedDemo disabled */
+  // // seedDemo();
   function seedDemo(){
     const has=loadDrafts().length>0; if(has) { renderDrafts(); return; }
     const placeholder='data:image/svg+xml;base64,'+btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180"><rect width="100%" height="100%" fill="#e9eef9"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Inter" font-size="16" fill="#6b7aa3">Bild</text></svg>`);
@@ -402,4 +403,11 @@ Hämtas i ${city.value}`:''}`;
   function toastMsg(t){ toast.textContent=t; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
   function doc(id){return document.getElementById(id)} function byId(id){return document.getElementById(id)} function qs(s){return document.querySelector(s)} function qsa(s){return Array.from(document.querySelectorAll(s))}
   function on(id,ev,fn){ const el=byId(id); el&&el.addEventListener(ev,fn); }
+
+  /* __BOOT__ */
+  renderDrafts();
+  renderGallery();
+  renderPreviewThumbs && renderPreviewThumbs();
+  updatePreview();
+  recalc();
 })();
