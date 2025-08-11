@@ -106,7 +106,7 @@ input[type=number]{-moz-appearance:textfield}
 .thumb .tools{position:absolute;top:6px;right:6px;display:flex;gap:6px;z-index:3}
 .thumb .tool{background:rgba(255,255,255,.92);border:1px solid #E6E6E6;border-radius:999px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .badge-hero{position:absolute;left:8px;bottom:8px;background:rgba(255,255,255,.94);border:1px solid #E6E6E6;border-radius:999px;padding:4px 8px;font-size:12px;z-index:1}
-.cover-btn{position:absolute;right:8px;bottom:8px;background:rgba(255,255,255,.94);border:1px solid #E6E6E6;border-radius:999px;padding:4px 8px;font-size:12px;opacity:0;transition:opacity .2s ease;z-index:2}
+.cover-btn{position:absolute;right:8px;bottom:8px;background:rgba(255,255,255,.94);border:1px solid #E6E6E6;border-radius:999px;padding:4px 8px;font-size:12px;opacity:0;transition:opacity .2s ease;z-i[...]
 .thumb:hover .cover-btn{opacity:1}
 .cover-btn:hover{background:#fff;box-shadow:0 8px 16px rgba(0,0,0,.08)}
 
@@ -139,16 +139,65 @@ input[type=number]{-moz-appearance:textfield}
 .q-score{font-size:22px;font-weight:700}
 .q-label{color:var(--muted);font-size:14px}
 
-/* marketplaces */
-.site-progress{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:6px 0 12px}
-.site-status{display:flex;flex-direction:column;align-items:center;gap:6px}
-.site-status-icon{width:18px;height:18px;border-radius:50%;border:2px solid #FFD54F;background:rgba(255,213,79,.15)}
-.site-status-icon.completed{border-color:#7CC9A7;background:rgba(124,201,167,.35)}
-.marketplace-list{display:flex;flex-direction:column;gap:12px}
-.marketplace-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid #E7F0FF}
-.marketplace-item .marketplace-info{display:flex;gap:10px;align-items:center}
-.marketplace-item .m-icon{width:28px;height:28px;border-radius:999px;display:grid;place-items:center;background:#fff;border:1px solid #E1E7F4;overflow:hidden}
+/* --- Marketplaces: uniform row & responsive --- */
+.marketplace-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* Each row = info (icon+text) | actions */
+.marketplace-item{
+  display:grid;
+  grid-template-columns: minmax(0,1fr) max-content; /* keep buttons on same line */
+  align-items:center;
+  gap:14px;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid #E7F0FF;
+}
+
+/* Left side: icon + text */
+.marketplace-item .marketplace-info{
+  display:grid;
+  grid-template-columns: 32px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+  min-width:0; /* prevents overflow pushing buttons down */
+}
+
+.marketplace-item .m-icon{
+  width:32px;height:32px;
+  border-radius:999px;
+  display:grid;place-items:center;
+  background:#fff;border:1px solid #E1E7F4;overflow:hidden;
+}
+
 .marketplace-item .m-icon img{width:18px;height:18px;display:block}
+
+.marketplace-item .m-text{min-width:0}
+.m-title{font-weight:700;line-height:1.15}
+.m-sub{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.25;
+  /* keep height uniform: clamp to 2 lines with ellipsis */
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* Right side: buttons – never wrap unless on small screens */
+.action-buttons{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:nowrap;
+}
+.action-buttons .pill{white-space:nowrap}
+
+/* Pastel brand tints (unchanged; keep yours) */
 .marketplace-item.tradera{background:rgba(247,228,140,.35)}
 .marketplace-item.tradera .m-icon{background:#fff4bd}
 .marketplace-item.blocket{background:rgba(255,154,166,.25)}
@@ -157,10 +206,18 @@ input[type=number]{-moz-appearance:textfield}
 .marketplace-item.facebook .m-icon{background:#e7efff}
 .marketplace-item.ebay{background:#ffffff}
 .marketplace-item.ebay .m-icon{background:#fff}
-.m-title{font-weight:700;overflow-wrap:anywhere}
-.m-sub{color:var(--muted);font-size:14px}
-.sold-wrap{display:flex;justify-content:center;margin-top:12px}
-.sold-btn{min-width:240px}
+
+/* Stack neatly on narrower screens */
+@media (max-width: 880px){
+  .marketplace-item{
+    grid-template-columns: 1fr; /* stack */
+  }
+  .action-buttons{
+    justify-content:flex-start;
+    flex-wrap:wrap; /* allow wrap only when stacked */
+    gap:8px;
+  }
+}
 
 /* drafts */
 .draft-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
@@ -177,7 +234,7 @@ input[type=number]{-moz-appearance:textfield}
 
 /* misc */
 .app-footer{max-width:1760px;margin:0 auto 28px;padding:0 24px;color:var(--muted);text-align:center}
-.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:24px;background:#111827;color:#fff;padding:12px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:all .25s ease;z-index:40}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:24px;background:#111827;color:#fff;padding:12px 16px;border-radius:999px;opacity:0;pointer-events:none;transition:all [...]
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .quick-only{display:block}.pro-only{display:none}
 .mode-pro .quick-only{display:none}.mode-pro .pro-only{display:block}
