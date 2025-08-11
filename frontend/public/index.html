@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AnnonsVän Pro — Studio</title>
-  <meta name="backend" content="https://annonsv-n.onrender.com" />
+  <meta name="backend" content="https://annonsv-n.onrender.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Inter:wght@400;500;600&family=Source+Serif+4:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css"/>
 </head>
@@ -23,12 +23,11 @@
   </header>
 
   <main class="shell">
-    <!-- Left: fields + drafts -->
+    <!-- Left -->
     <section class="pane left">
       <div class="card">
         <div class="card-head"><h2>Annons & Utkast</h2></div>
         <div class="card-body">
-
           <div class="field">
             <label for="title">Titel*</label>
             <div class="input-wrap">
@@ -49,38 +48,13 @@
               <label for="condition">Skick*</label>
               <select id="condition">
                 <option value="">Välj skick…</option>
-                <option>Nytt</option>
-                <option>Som nytt</option>
-                <option>Mycket bra</option>
-                <option>Använt</option>
+                <option>Nytt</option><option>Som nytt</option>
+                <option>Mycket bra</option><option>Använt</option>
               </select>
             </div>
           </div>
 
-          <div class="divider"></div>
-
-          <div class="row">
-            <div class="field quick-hide">
-              <label for="tags">Taggar</label>
-              <div class="input-wrap">
-                <input id="tags" type="text" placeholder="Komma-separerade"/>
-                <button class="pill ghost" data-copy="tags" title="Kopiera taggar">Kopiera</button>
-              </div>
-              <div id="tag-chips" class="tag-chips quick-hide"></div>
-              <button id="gen-tags" class="btn soft small quick-hide">Generera taggar med AI</button>
-            </div>
-            <div class="field pro-only">
-              <label for="city">Ort (valfritt)</label>
-              <input id="city" type="text" placeholder="T.ex. Stockholm"/>
-            </div>
-          </div>
-
-          <div class="field pro-only">
-            <label for="notes">Anmärkningar (valfritt)</label>
-            <textarea id="notes" class="notes" placeholder="Kort fakta: originalkartong saknas, garanti kvar …"></textarea>
-          </div>
-
-          <div class="divider"></div>
+          <hr class="divider"/>
 
           <div class="field">
             <label for="description">Beskrivning*</label>
@@ -99,131 +73,167 @@
             </div>
           </div>
 
-          <div class="divider"></div>
+          <div class="row quick-hide">
+            <div class="field">
+              <label for="tags">Taggar</label>
+              <div class="input-wrap">
+                <input id="tags" type="text" placeholder="Komma-separerade"/>
+                <button class="pill ghost" data-copy="tags" title="Kopiera taggar">Kopiera</button>
+              </div>
+              <div id="tag-chips" class="tag-chips quick-hide"></div>
+              <button id="gen-tags" class="btn soft small quick-hide">Generera taggar med AI</button>
+            </div>
+            <div class="field pro-only">
+              <label for="city">Ort (valfritt)</label>
+              <input id="city" type="text" placeholder="T.ex. Stockholm eller Malmö"/>
+            </div>
+          </div>
+
+          <div class="field pro-only">
+            <label for="notes">Anmärkningar (valfritt)</label>
+            <textarea id="notes" class="notes" placeholder="Kort fakta: originalkartong saknas, garanti kvar …"></textarea>
+          </div>
+
+          <hr class="divider"/>
 
           <div class="field">
             <label for="photos">Bilder</label>
-            <div id="drop" class="dropzone big">
-              <input id="photos" type="file" accept="image/*" multiple/>
+
+            <!-- Modern single dropzone (click or drop). Gallery is inside. -->
+            <div id="drop" class="dropzone big" tabindex="0" aria-label="Ladda upp bilder">
+              <input id="photos" type="file" accept="image/*" multiple aria-hidden="true"/>
               <div class="drop-inner">
                 <div class="drop-title">Dra & släpp bilder här — eller klicka</div>
                 <div class="hint">PNG/JPG, max 10 • komprimeras automatiskt</div>
               </div>
-              <!-- Thumbnails live inside the drop box -->
+
+              <!-- Thumbs render here -->
               <div id="gallery" class="gallery inside"></div>
             </div>
           </div>
 
           <div class="actions">
-            <button id="save-draft" class="btn success"><i class="i i-save"></i> Spara utkast</button>
+            <button id="save-draft" class="btn success">Spara utkast</button>
             <button id="clear-all" class="btn soft">Rensa allt</button>
             <button id="copy-all" class="btn primary">Kopiera allt</button>
           </div>
 
-          <div class="divider"></div>
+          <hr class="divider"/>
 
           <div class="drafts">
             <h3 class="h3">Tidigare utkast</h3>
             <div id="draft-list" class="draft-list"></div>
           </div>
-
         </div>
       </div>
     </section>
 
-    <!-- Center: preview (subtle quality) -->
+    <!-- Center -->
     <section class="pane center">
       <div class="card tall">
         <div class="card-head"><h2>Förhandsvisning</h2></div>
         <div class="card-body preview" id="preview">
           <div class="ph-title">Din titel visas här</div>
           <div class="ph-price">— kr • Skick: —</div>
+
+          <div class="preview-hero" id="preview-hero"></div>
+          <div class="preview-strip" id="preview-strip"></div>
+
           <div class="ph-desc">Beskrivning förhandsvisas här …</div>
-          <div class="ph-photos" id="preview-photos">Bilder visas här</div>
 
           <div class="quality card-lite subtle">
-            <div class="q-top">
-              <div class="q-score" id="q-score">72</div>
-              <div class="q-label">Kvalitet</div>
-            </div>
-            <ul class="q-suggestions" id="q-suggestions">
-              <li>Lägg till minst 3 bilder (+8)</li>
-            </ul>
+            <div class="q-top"><div class="q-score" id="q-score">0</div><div class="q-label">Kvalitet</div></div>
+            <ul class="q-suggestions" id="q-suggestions"><li>Lägg till titel (+10)</li></ul>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Right: marketplaces + sold -->
+    <!-- Right -->
     <section class="pane right">
       <div class="card">
         <div class="card-head"><h2>Välj Marknadsplats</h2></div>
         <div class="card-body">
-          <p class="pub-sub">Använd knapparna för att öppna varje marknadsplats och markera som klar när du är färdig.</p>
+          <p class="pub-sub">Öppna varje marknadsplats och markera som klar när du är färdig.</p>
 
           <div class="site-progress" id="site-progress">
-            <div class="site-status">
-              <div class="site-status-icon" id="tradera-status"></div><span>Tradera</span>
-            </div>
-            <div class="site-status">
-              <div class="site-status-icon" id="blocket-status"></div><span>Blocket</span>
-            </div>
-            <div class="site-status">
-              <div class="site-status-icon" id="facebook-status"></div><span>Facebook</span>
-            </div>
-            <div class="site-status">
-              <div class="site-status-icon" id="ebay-status"></div><span>eBay</span>
-            </div>
+            <div class="site-status"><div class="site-status-icon" id="tradera-status"></div><span>Tradera</span></div>
+            <div class="site-status"><div class="site-status-icon" id="blocket-status"></div><span>Blocket</span></div>
+            <div class="site-status"><div class="site-status-icon" id="facebook-status"></div><span>Facebook</span></div>
+            <div class="site-status"><div class="site-status-icon" id="ebay-status"></div><span>eBay</span></div>
           </div>
 
           <div class="progress-text" id="progress-text">0% slutfört</div>
 
           <div class="marketplace-list">
-            <div class="marketplace-item" data-market="tradera">
+            <div class="marketplace-item tradera" data-market="tradera">
               <div class="marketplace-info">
-                <div class="m-title">Tradera</div><div class="m-sub">Sveriges största auktionssajt</div>
+                <div class="m-icon" aria-hidden="true">
+                  <img src="/gallery/icons/tradera.svg" alt="" />
+                </div>
+                <div class="m-text">
+                  <div class="m-title">Tradera</div>
+                  <div class="m-sub">Sveriges största auktionssajt</div>
+                </div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="tradera">Öppna</button>
-                <button class="pill complete-btn" data-complete="tradera">Klar</button>
+                <button class="pill open" data-open="tradera">Öppna ↗</button>
+                <button class="pill complete-btn" data-complete="tradera" aria-pressed="false">Klar ✓</button>
               </div>
             </div>
 
-            <div class="marketplace-item" data-market="blocket">
+            <div class="marketplace-item blocket" data-market="blocket">
               <div class="marketplace-info">
-                <div class="m-title">Blocket</div><div class="m-sub">Sveriges ledande annonsplattform</div>
+                <div class="m-icon" aria-hidden="true">
+                  <img src="/gallery/icons/blocket.svg" alt="" />
+                </div>
+                <div class="m-text">
+                  <div class="m-title">Blocket</div>
+                  <div class="m-sub">Sveriges ledande annonsplattform</div>
+                </div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="blocket">Öppna</button>
-                <button class="pill complete-btn" data-complete="blocket">Klar</button>
+                <button class="pill open" data-open="blocket">Öppna ↗</button>
+                <button class="pill complete-btn" data-complete="blocket" aria-pressed="false">Klar ✓</button>
               </div>
             </div>
 
-            <div class="marketplace-item" data-market="facebook">
+            <div class="marketplace-item facebook" data-market="facebook">
               <div class="marketplace-info">
-                <div class="m-title">Facebook Marketplace</div><div class="m-sub">Miljontals användare varje dag</div>
+                <div class="m-icon" aria-hidden="true">
+                  <img src="/gallery/icons/facebook.svg" alt="" />
+                </div>
+                <div class="m-text">
+                  <div class="m-title">Facebook Marketplace</div>
+                  <div class="m-sub">Miljontals användare varje dag</div>
+                </div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="facebook">Öppna</button>
-                <button class="pill complete-btn" data-complete="facebook">Klar</button>
+                <button class="pill open" data-open="facebook">Öppna ↗</button>
+                <button class="pill complete-btn" data-complete="facebook" aria-pressed="false">Klar ✓</button>
               </div>
             </div>
 
-            <div class="marketplace-item" data-market="ebay">
+            <div class="marketplace-item ebay" data-market="ebay">
               <div class="marketplace-info">
-                <div class="m-title">eBay</div><div class="m-sub">Global marknadsplats</div>
+                <div class="m-icon" aria-hidden="true">
+                  <img src="/gallery/icons/ebay.svg" alt="" />
+                </div>
+                <div class="m-text">
+                  <div class="m-title">eBay</div>
+                  <div class="m-sub">Global marknadsplats</div>
+                </div>
               </div>
               <div class="action-buttons">
-                <button class="pill open" data-open="ebay">Öppna</button>
-                <button class="pill complete-btn" data-complete="ebay">Klar</button>
+                <button class="pill open" data-open="ebay">Öppna ↗</button>
+                <button class="pill complete-btn" data-complete="ebay" aria-pressed="false">Klar ✓</button>
               </div>
             </div>
           </div>
 
           <div class="sold-wrap">
-            <button id="mark-sold" class="btn warn sold-btn">Markera som Såld 🎉</button>
+            <button id="mark-sold" class="btn warn sold-btn" aria-pressed="false">Markera som Såld 🎉</button>
           </div>
-
         </div>
       </div>
     </section>
