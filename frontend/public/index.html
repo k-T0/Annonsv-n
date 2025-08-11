@@ -98,16 +98,17 @@
 
           <div class="field">
             <label for="photos">Bilder</label>
-
-            <!-- Single dropzone; gallery inside -->
+            <!-- Single modern dropzone -->
             <div id="drop" class="dropzone big" tabindex="0" aria-label="Ladda upp bilder">
               <input id="photos" type="file" accept="image/*" multiple aria-hidden="true"/>
               <div class="drop-inner">
                 <div class="drop-title">Dra & släpp bilder här — eller klicka</div>
                 <div class="hint">PNG/JPG, max 10 • komprimeras automatiskt</div>
               </div>
-
               <div id="gallery" class="gallery inside"></div>
+
+              <!-- Move-all handle (drag left/right to rotate order by steps) -->
+              <button id="group-handle" class="group-handle" title="Dra för att flytta alla bilder">⇆</button>
             </div>
           </div>
 
@@ -168,7 +169,7 @@
             <div class="marketplace-item tradera" data-market="tradera">
               <div class="marketplace-info">
                 <div class="m-icon" aria-hidden="true">
-                  <img src="gallery/icons/tradera.svg" alt="" />
+                  <img src="gallery/icons/tradera.svg" alt="">
                 </div>
                 <div class="m-text">
                   <div class="m-title">Tradera</div>
@@ -184,7 +185,7 @@
             <div class="marketplace-item blocket" data-market="blocket">
               <div class="marketplace-info">
                 <div class="m-icon" aria-hidden="true">
-                  <img src="gallery/icons/blocket.svg" alt="" />
+                  <img src="gallery/icons/blocket.svg" alt="">
                 </div>
                 <div class="m-text">
                   <div class="m-title">Blocket</div>
@@ -200,7 +201,7 @@
             <div class="marketplace-item facebook" data-market="facebook">
               <div class="marketplace-info">
                 <div class="m-icon" aria-hidden="true">
-                  <img src="gallery/icons/facebook.svg" alt="" />
+                  <img src="gallery/icons/facebook.svg" alt="">
                 </div>
                 <div class="m-text">
                   <div class="m-title">Facebook Marketplace</div>
@@ -216,7 +217,7 @@
             <div class="marketplace-item ebay" data-market="ebay">
               <div class="marketplace-info">
                 <div class="m-icon" aria-hidden="true">
-                  <img src="gallery/icons/ebay.svg" alt="" />
+                  <img src="gallery/icons/ebay.svg" alt="">
                 </div>
                 <div class="m-text">
                   <div class="m-title">eBay</div>
