@@ -17,7 +17,6 @@
     if(t){navigator.clipboard.writeText(t).then(()=>toastMsg('Kopierat'));}
   }));
 
-  /* tags */
   const chipBox=doc('tag-chips');
   function renderChips(){
     if(!chipBox) return;
@@ -44,7 +43,6 @@
     tags.value=Array.from(merged).join(', '); renderChips(); toastMsg('Taggar genererade');
   }); renderChips();
 
-  /* AI */
   qsa('.btn.ai').forEach(btn=>btn.addEventListener('click',()=>{
     const style=btn.dataset.style; generateAI(style, btn);
   }));
@@ -59,11 +57,11 @@
       if(BACKEND){
         const res=await fetch(`${BACKEND}/generate-description`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({style,title:t,price:p,condition:c,notes:n,city:k})});
         if(res.ok){ const data=await res.json(); description.value = sanitize(data.description||''); }
-        else { description.value = fallbackAI(style); toastMsg('AI: fallback');}
+        else { description.value = fallbackAI(style); }
       }else{
-        description.value = fallbackAI(style); toastMsg('AI ej konfigurerad, använder fallback');
+        description.value = fallbackAI(style);
       }
-    }catch(e){ description.value=fallbackAI(style); toastMsg('AI fel, använder fallback'); }
+    }catch(e){ description.value=fallbackAI(style); }
     finally{ btn.disabled=false; btn.textContent=old; updatePreview(); recalc(); }
   }
   function sanitize(s=''){
@@ -76,19 +74,13 @@
     return `${b} i utmärkt skick med pålitlig prestanda. Levereras med tillbehör. Hör av dig vid frågor eller bud.`;
   }
 
-  /* Images */
+  // Images
   let thumbs=[];
   const fileInput=doc('photos'), drop=doc('drop'), groupHandle=doc('group-handle');
-
   drop.addEventListener('click', (e)=>{ if(e.target.id==='gallery' || e.target.closest('.tools') || e.target.closest('.cover-btn')) return; fileInput.click(); });
   fileInput.addEventListener('change', e=>handleFiles(e.target.files));
   drop.addEventListener('dragover', e=>{e.preventDefault();});
-  drop.addEventListener('drop', e=>{
-    e.preventDefault();
-    // If an internal gallery drag is happening, do NOT treat as files
-    if(e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('text/x-thumb-id')) return;
-    if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);
-  });
+  drop.addEventListener('drop', e=>{e.preventDefault(); if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);});
 
   function handleFiles(fileList){
     const incoming=Array.from(fileList||[]).slice(0, Math.max(0, 10 - thumbs.length));
@@ -150,74 +142,56 @@
     thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
   }
 
-  /* Smooth, no-duplicate reordering */
-  let dragId=null, placeholder=null, draggingEl=null, lightboxNeedsGallery=false;
-
-  // helper for transparent drag image to avoid giant ghost
-  function transparentDragImage(){
-    const c=document.createElement('canvas'); c.width=1; c.height=1; return c;
-  }
-
+  // Drag to reorder with "gravity" (midpoint crossing)
+  let dragId=null;
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
-    dragId = thumb.dataset.id; draggingEl=thumb; thumb.classList.add('dragging');
-
-    // mark internal drag and remove default ghost
-    e.dataTransfer.setData('text/x-thumb-id', dragId);
-    e.dataTransfer.setDragImage(transparentDragImage(),0,0);
+    dragId = thumb.dataset.id; thumb.classList.add('dragging');
     e.dataTransfer.effectAllowed='move';
-
-    // placeholder same size
-    placeholder=document.createElement('div');
-    placeholder.className='thumb placeholder';
-    placeholder.style.height=thumb.offsetHeight+'px';
-    placeholder.style.width=thumb.offsetWidth+'px';
-    gallery.insertBefore(placeholder, thumb.nextSibling);
+    // nicer drag preview
+    const img = new Image(); img.src = thumb.querySelector('img').src; e.dataTransfer.setDragImage(img, 32, 32);
   });
-
   gallery.addEventListener('dragover', e=>{
     e.preventDefault();
-    const over=e.target.closest('.thumb'); if(!over || !placeholder) return;
-    if(over===placeholder || over===draggingEl) return;
+    const over=e.target.closest('.thumb'); if(!over) return;
+    const overId=over.dataset.id; if(!dragId || dragId===overId) return;
 
-    const rect = over.getBoundingClientRect();
-    const before = (e.clientX - rect.left) < rect.width/2;
-    if(before) gallery.insertBefore(placeholder, over);
-    else gallery.insertBefore(placeholder, over.nextSibling);
-  });
+    const overRect = over.getBoundingClientRect();
+    const before = (e.clientX - overRect.left) < overRect.width/2;
 
-  function commitReorder(){
-    if(!dragId || !placeholder) return;
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
-    const toIdx = Array.from(gallery.children).indexOf(placeholder);
-    if(fromIdx>=0 && toIdx>=0){
-      const item=thumbs.splice(fromIdx,1)[0];
-      // clamp
-      const dest = Math.min(toIdx, thumbs.length);
-      thumbs.splice(dest,0,item);
+    let toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
+    if(!before) toIdx += 1;
+    if(toIdx>fromIdx) toIdx--; // adjust for removal
+
+    if(fromIdx===toIdx || fromIdx<0 || toIdx<0) return;
+
+    const draggingEl = gallery.querySelector('.thumb.dragging');
+    const item=thumbs.splice(fromIdx,1)[0];
+    thumbs.splice(toIdx,0,item);
+
+    // DOM move without full re-render (prevents flicker & dupes)
+    if(draggingEl){
+      if(before) gallery.insertBefore(draggingEl, over);
+      else gallery.insertBefore(draggingEl, over.nextSibling);
     }
-  }
-
-  function cleanupDrag(){
-    if(draggingEl) draggingEl.classList.remove('dragging');
-    if(placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-    dragId=null; placeholder=null; draggingEl=null;
-  }
-
+    renderPreviewThumbs();
+  });
+  gallery.addEventListener('dragend', ()=>{
+    const dragging = gallery.querySelector('.thumb.dragging');
+    if(dragging) dragging.classList.remove('dragging');
+    dragId = null;
+    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
+  });
   gallery.addEventListener('drop', e=>{
     e.preventDefault();
-    if(e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('text/x-thumb-id')){
-      commitReorder(); cleanupDrag();
-      renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
-    }
-  });
-
-  gallery.addEventListener('dragend', ()=>{
-    commitReorder(); cleanupDrag();
+    const dragging = gallery.querySelector('.thumb.dragging');
+    if(dragging) dragging.classList.remove('dragging');
+    dragId = null;
     renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
   });
 
-  /* Tools: rotate / view / delete / set cover */
+  // Tools: rotate / view / delete / set cover
   gallery.addEventListener('click', e=>{
     const rot=e.target.getAttribute('data-rot');
     const view=e.target.getAttribute('data-view');
@@ -230,18 +204,59 @@
     if(cov){ const i=thumbs.findIndex(x=>String(x.id)===cov); if(i>0){ const [it]=thumbs.splice(i,1); thumbs.unshift(it); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
   });
 
-  /* Lightbox */
+  // Lightbox
   const lb=doc('lightbox'), lbImg=doc('lightbox-image'); const lbPrev=doc('lb-prev'), lbNext=doc('lb-next'), lbRotate=doc('lb-rotate'), lbClose=doc('lb-close');
   qsa('[data-lightbox-close]').forEach(n=>n.addEventListener('click',closeLB)); lbClose.addEventListener('click',closeLB);
   let lbIndex=0;
-  function openLB(id){ lbIndex=Math.max(0, thumbs.findIndex(t=>String(t.id)===id)); if(lbIndex<0)return; renderLB(); lb.classList.add('show');}
-  function renderLB(){ if(!thumbs.length) return; const t=thumbs[lbIndex]; lbImg.src=t.src; lbImg.style.transform=`rotate(${t.rotation}deg)`; }
-  function closeLB(){ lb.classList.remove('show'); if(lightboxNeedsGallery){ renderGallery(); renderPreviewThumbs(); lightboxNeedsGallery=false; } }
+
+  function openLB(id){ lbIndex=Math.max(0, thumbs.findIndex(t=>String(t.id)===id)); if(lbIndex<0)return; renderLB(); lb.classList.add('show'); }
+
+  // >>> UPDATED: keep image inside viewport on load/rotate/resize
+  function renderLB(){
+    if(!thumbs.length) return;
+    const t=thumbs[lbIndex];
+    lbImg.onload = fitLightbox;          // ensure scaling after (re)load
+    lbImg.src=t.src;
+    fitLightbox();                        // also try immediately (cached)
+  }
+  function fitLightbox(){
+    if(!thumbs.length) return;
+    const t = thumbs[lbIndex];
+    const deg = (t.rotation||0) % 360;
+    const odd = Math.abs(deg) % 180 === 90;      // 90 or 270 -> swap w/h
+
+    const boxW = window.innerWidth * 0.80;       // match .lightbox-inner img rules
+    const boxH = window.innerHeight * 0.70;
+
+    const iw = lbImg.naturalWidth  || 1;
+    const ih = lbImg.naturalHeight || 1;
+
+    const rw = odd ? ih : iw;
+    const rh = odd ? iw : ih;
+
+    const scale = Math.min(boxW / rw, boxH / rh);
+
+    lbImg.style.transformOrigin = 'center center';
+    lbImg.style.transform = `translateZ(0) rotate(${deg}deg) scale(${scale})`;
+  }
+  window.addEventListener('resize', fitLightbox);
+  // <<< UPDATED end
+
+  function closeLB(){ lb.classList.remove('show'); }
+
   lbPrev.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex-1+thumbs.length)%thumbs.length; renderLB();});
   lbNext.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex+1)%thumbs.length; renderLB();});
-  lbRotate.addEventListener('click',()=>{ if(!thumbs.length) return; thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; renderLB(); persistThumbsIfDraft(); lightboxNeedsGallery=true; });
 
-  /* Preview + Quality */
+  // >>> UPDATED: after rotating, re-fit the image
+  lbRotate.addEventListener('click',()=>{ 
+    if(!thumbs.length) return; 
+    thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; 
+    renderLB(); 
+    renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();
+  });
+  // <<< UPDATED end
+
+  // Preview + Quality
   [title, price, condition, description].forEach(el=>el.addEventListener('input',()=>{ updatePreview(); recalc(); }));
   function updatePreview(){
     preview.querySelector('.ph-title').textContent=title.value||'Din titel visas här';
@@ -269,7 +284,7 @@
     deriveStatusFromFields();
   }
 
-  /* Marketplaces */
+  // Marketplaces
   const state=loadMarkets(); updateAll(); updateProgress();
   qsa('[data-open]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-open'); const txt=formatFor(m);
@@ -286,7 +301,7 @@
   }));
 
   function updateAll(){ Object.keys(state).forEach(m=>{
-    byId(`${m}-status`)?.classList.toggle('completed', !!state[m]);
+    byId(`${m}-status`).classList.toggle('completed', !!state[m]);
     const b=qs(`.complete-btn[data-complete="${m}"]`);
     if(b){ b.classList.toggle('completed', !!state[m]); b.setAttribute('aria-pressed', String(!!state[m]));}
   }); }
@@ -306,7 +321,7 @@
   function loadMarkets(){ try{return JSON.parse(localStorage.getItem('avp3.markets')||'{"tradera":false,"blocket":false,"facebook":false,"ebay":false}');}catch(e){return {"tradera":false,"blocket":false,"facebook":false,"ebay":false};} }
   function saveMarkets(){ localStorage.setItem('avp3.markets', JSON.stringify(state)); }
 
-  /* Status + Sold */
+  // Status + Sold
   let currentStatus='draft', soldFlag=false;
   function deriveStatusFromFields(){
     if(soldFlag){ currentStatus='sold'; return; }
@@ -341,7 +356,7 @@
     step();
   }
 
-  /* Move-all handle: rotate order by whole cards with pointer drag */
+  // Group-drag: (kept; no changes)
   if(groupHandle){
     let startX=0, lastShift=0, active=false, unit=132;
     function measureUnit(){
@@ -389,7 +404,7 @@
     });
   }
 
-  /* Drafts */
+  // Drafts (unchanged)
   const draftList=byId('draft-list');
   on('save-draft','click',saveDraft);
   function saveDraft(){
@@ -465,7 +480,7 @@
 
   updatePreview(); recalc();
 
-  /* helpers */
+  // Helpers
   function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
   function toastMsg(t){ toast.textContent=t; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
   function doc(id){return document.getElementById(id)} function byId(id){return document.getElementById(id)} function qs(s){return document.querySelector(s)} function qsa(s){return Array.from(document.querySelectorAll(s))}
