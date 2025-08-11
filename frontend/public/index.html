@@ -99,7 +99,7 @@
           <div class="field">
             <label for="photos">Bilder</label>
 
-            <!-- Modern single dropzone (click or drop). Gallery is inside. -->
+            <!-- Single dropzone; gallery inside -->
             <div id="drop" class="dropzone big" tabindex="0" aria-label="Ladda upp bilder">
               <input id="photos" type="file" accept="image/*" multiple aria-hidden="true"/>
               <div class="drop-inner">
@@ -107,10 +107,10 @@
                 <div class="hint">PNG/JPG, max 10 • komprimeras automatiskt</div>
               </div>
 
-              <!-- Thumbs render here -->
               <div id="gallery" class="gallery inside"></div>
-              <!-- NEW: group handle -->
-              <button id="group-handle" class="group-handle" title="Dra för att flytta alla bilder">⇆</button>
+
+              <!-- NEW: drag pill that carries ALL files out of the app -->
+              <button id="drag-all" class="drag-all" draggable="true" title="Dra alla bilder till en marknadsplats">⇪</button>
             </div>
           </div>
 
