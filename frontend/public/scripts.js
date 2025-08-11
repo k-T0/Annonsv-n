@@ -142,13 +142,12 @@
     thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
   }
 
-  // Drag to reorder with "gravity" (midpoint crossing)
+  // Drag to reorder with midpoint “gravity” (smooth, no dupes)
   let dragId=null;
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
     dragId = thumb.dataset.id; thumb.classList.add('dragging');
     e.dataTransfer.effectAllowed='move';
-    // nicer drag preview
     const img = new Image(); img.src = thumb.querySelector('img').src; e.dataTransfer.setDragImage(img, 32, 32);
   });
   gallery.addEventListener('dragover', e=>{
@@ -162,7 +161,7 @@
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
     let toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
     if(!before) toIdx += 1;
-    if(toIdx>fromIdx) toIdx--; // adjust for removal
+    if(toIdx>fromIdx) toIdx--;
 
     if(fromIdx===toIdx || fromIdx<0 || toIdx<0) return;
 
@@ -170,26 +169,20 @@
     const item=thumbs.splice(fromIdx,1)[0];
     thumbs.splice(toIdx,0,item);
 
-    // DOM move without full re-render (prevents flicker & dupes)
     if(draggingEl){
       if(before) gallery.insertBefore(draggingEl, over);
       else gallery.insertBefore(draggingEl, over.nextSibling);
     }
     renderPreviewThumbs();
   });
-  gallery.addEventListener('dragend', ()=>{
+  function endDrag(){
     const dragging = gallery.querySelector('.thumb.dragging');
     if(dragging) dragging.classList.remove('dragging');
     dragId = null;
     renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
-  });
-  gallery.addEventListener('drop', e=>{
-    e.preventDefault();
-    const dragging = gallery.querySelector('.thumb.dragging');
-    if(dragging) dragging.classList.remove('dragging');
-    dragId = null;
-    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
-  });
+  }
+  gallery.addEventListener('dragend', endDrag);
+  gallery.addEventListener('drop', (e)=>{ e.preventDefault(); endDrag(); });
 
   // Tools: rotate / view / delete / set cover
   gallery.addEventListener('click', e=>{
@@ -414,7 +407,7 @@
     if(currentDraftId===id) currentDraftId=null;
     renderDrafts(); toastMsg('Utkast borttaget');
   }
-  function labelForStatus(s){ return s==='ready'?'Redo': s==='published'?'Publicerad': s==='synced'?'Synkad': s==='sold'?'Såld':'Utkast'; }
+  function labelForStatus(s){ return s==='ready'?'Redo': s==='published'?'Publicerad': s==='synkad'?'Synkad': s==='sold'?'Såld':'Utkast'; }
 
   function persistThumbsIfDraft(){
     if(!currentDraftId) return;
