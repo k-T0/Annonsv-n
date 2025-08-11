@@ -76,7 +76,7 @@
 
   // Images
   let thumbs=[];
-  const fileInput=doc('photos'), drop=doc('drop'), dragAll=doc('drag-all');
+  const fileInput=doc('photos'), drop=doc('drop');
   drop.addEventListener('click', (e)=>{ if(e.target.id==='gallery' || e.target.closest('.tools') || e.target.closest('.cover-btn')) return; fileInput.click(); });
   fileInput.addEventListener('change', e=>handleFiles(e.target.files));
   drop.addEventListener('dragover', e=>{e.preventDefault();});
@@ -87,7 +87,7 @@
     if(!incoming.length) return;
     Promise.all(incoming.map(f=>compressToThumb(f,1200,0.8))).then(datas=>{
       datas.forEach(data=>{ if(data) thumbs.push({src:data, rotation:0, id:Date.now()+Math.random()}); });
-      renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); updateDragAllState();
+      renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
     });
   }
   function compressToThumb(file, max=1200, quality=0.8){
@@ -129,7 +129,6 @@
         </div>`;
       gallery.appendChild(w);
     });
-    updateDragAllState();
   }
 
   function renderPreviewThumbs(){
@@ -143,21 +142,27 @@
     thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
   }
 
-  // Drag-to-reorder with midpoint gravity (smooth & no duplicates)
-  let dragId=null;
+  // Drag-to-reorder with midpoint gravity, custom tiny drag-ghost, no dups
+  let dragId=null, isDragging=false;
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
-    dragId = thumb.dataset.id; thumb.classList.add('dragging');
+    dragId = thumb.dataset.id; isDragging=true; thumb.classList.add('dragging');
     e.dataTransfer.effectAllowed='move';
-    const img = new Image(); img.src = thumb.querySelector('img').src; e.dataTransfer.setDragImage(img, 32, 32);
+
+    // Small canvas drag image to avoid huge page snapshot
+    const ghost=document.createElement('canvas'); ghost.width=64; ghost.height=64;
+    const ctx=ghost.getContext('2d'); ctx.fillStyle='rgba(17,24,39,.92)'; ctx.beginPath(); ctx.arc(32,32,30,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='700 16px Inter,system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('⇅',32,34);
+    e.dataTransfer.setDragImage(ghost, 32, 32);
   });
   gallery.addEventListener('dragover', e=>{
+    if(!isDragging){ return; }
     e.preventDefault();
     const over=e.target.closest('.thumb'); if(!over) return;
     const overId=over.dataset.id; if(!dragId || dragId===overId) return;
 
-    const overRect = over.getBoundingClientRect();
-    const before = (e.clientX - overRect.left) < overRect.width/2;
+    const rect = over.getBoundingClientRect();
+    const before = (e.clientX - rect.left) < rect.width/2;
 
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
     let toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
@@ -177,9 +182,10 @@
     renderPreviewThumbs();
   });
   function endDrag(){
+    if(!isDragging) return;
     const dragging = gallery.querySelector('.thumb.dragging');
     if(dragging) dragging.classList.remove('dragging');
-    dragId = null;
+    dragId = null; isDragging=false;
     renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
   }
   gallery.addEventListener('dragend', endDrag);
@@ -237,7 +243,7 @@
     deriveStatusFromFields();
   }
 
-  // Marketplaces (unchanged)
+  // Marketplaces
   const state=loadMarkets(); updateAll(); updateProgress();
   qsa('[data-open]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-open'); const txt=formatFor(m);
@@ -309,49 +315,7 @@
     step();
   }
 
-  // ===== Drag ALL images pill (exports real File objects) =====
-  if(dragAll){
-    dragAll.addEventListener('dragstart',(e)=>{
-      if(!thumbs.length){ e.preventDefault(); return; }
-      const dt = e.dataTransfer; if(!dt){ e.preventDefault(); return; }
-      dt.effectAllowed='copy';
-
-      // build File objects from our data URLs (sync; no async fetch needed)
-      const files = thumbs.slice(0,10).map((t,i)=>{
-        const blob = dataURLtoBlob(t.src);
-        const name = `annonsvan-${String(i+1).padStart(2,'0')}.jpg`;
-        try{ return new File([blob], name, {type: 'image/jpeg'}); }
-        catch{ blob.name = name; return blob; }
-      });
-      if(dt.items && dt.items.add){
-        files.forEach(f=>{ try{ dt.items.add(f); }catch{} });
-      }
-
-      // custom drag image with count
-      const dragImg = document.createElement('canvas');
-      dragImg.width=96; dragImg.height=96;
-      const ctx=dragImg.getContext('2d');
-      ctx.fillStyle='rgba(17,24,39,.92)'; ctx.beginPath(); ctx.arc(48,48,44,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='700 28px Inter,system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(String(files.length),48,48);
-      dt.setDragImage(dragImg, 48, 48);
-    });
-  }
-  function dataURLtoBlob(dataUrl){
-    const parts=dataUrl.split(','); const mime=(parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
-    const bstr=atob(parts[1]); const len=bstr.length; const u8=new Uint8Array(len);
-    for(let i=0;i<len;i++) u8[i]=bstr.charCodeAt(i);
-    return new Blob([u8],{type:mime});
-  }
-  function updateDragAllState(){
-    if(!dragAll) return;
-    const disabled = thumbs.length===0;
-    dragAll.toggleAttribute('disabled', disabled);
-    dragAll.setAttribute('aria-disabled', String(disabled));
-    dragAll.title = disabled ? 'Lägg till bilder först' : 'Dra alla bilder till en marknadsplats';
-  }
-
-  // ===== Drafts (unchanged) =====
+  // Drafts
   const draftList=byId('draft-list');
   on('save-draft','click',saveDraft);
   function saveDraft(){
