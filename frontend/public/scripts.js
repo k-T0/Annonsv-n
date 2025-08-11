@@ -4,34 +4,32 @@
   quickBtn.addEventListener('click',()=>setMode('quick')); proBtn.addEventListener('click',()=>setMode('pro'));
   function setMode(m){const isPro=m==='pro'; body.classList.toggle('mode-pro',isPro); quickBtn.classList.toggle('active',!isPro); proBtn.classList.toggle('active',isPro); renderPreviewThumbs(); recalc(); }
 
-  // Elements
   const title=doc('title'), price=doc('price'), condition=doc('condition'), city=doc('city'), tags=doc('tags'), notes=doc('notes'), description=doc('description');
-  const preview=doc('preview'), previewPhotos=doc('preview-photos'), gallery=doc('gallery'), toast=doc('toast');
+  const preview=doc('preview'), previewHero=doc('preview-hero'), previewStrip=doc('preview-strip'), gallery=doc('gallery'), toast=doc('toast');
   const confettiCanvas = doc('confetti');
   const BACKEND=(document.querySelector('meta[name="backend"]')?.content||'').replace(/\/+$/,'');
 
-  // Track current draft id if loaded
   let currentDraftId = null;
 
-  // Copy chips
+  // Copy pills
   qsa('[data-copy]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.getAttribute('data-copy'); const el=doc(id);
     const t=id==='price'?(el.value?el.value+' SEK':''):(el.value||'');
     if(t){navigator.clipboard.writeText(t).then(()=>toastMsg('Kopierat'));}
   }));
 
-  // Tags / chips
+  // Tags
   const chipBox=doc('tag-chips');
   function renderChips(){
+    if(!chipBox) return;
     chipBox.innerHTML='';
-    (tags.value||'').split(',').map(t=>t.trim()).filter(Boolean).forEach(tag=>{
-      const s=document.createElement('span');
-      s.className='tag-chip'; s.innerHTML=`${esc(tag)} <span class="x" data-x="${esc(tag)}">×</span>`;
-      chipBox.appendChild(s);
+    (tags?.value||'').split(',').map(t=>t.trim()).filter(Boolean).forEach(tag=>{
+      const s=document.createElement('span'); s.className='tag-chip';
+      s.innerHTML=`${esc(tag)} <span class="x" data-x="${esc(tag)}">×</span>`; chipBox.appendChild(s);
     });
   }
   tags&&tags.addEventListener('input',renderChips);
-  chipBox.addEventListener('click',e=>{
+  chipBox?.addEventListener('click',e=>{
     const x=e.target.getAttribute('data-x'); if(!x) return;
     const arr=(tags.value||'').split(',').map(t=>t.trim()).filter(Boolean).filter(t=>t!==x);
     tags.value=arr.join(', '); renderChips();
@@ -46,10 +44,8 @@
     tags.value=Array.from(merged).join(', '); renderChips(); toastMsg('Taggar genererade');
   }); renderChips();
 
-  // AI generation wired to backend (fallback to simple patterns)
-  qsa('.btn.ai').forEach(btn=>btn.addEventListener('click',()=>{
-    const style=btn.dataset.style; generateAI(style, btn);
-  }));
+  // AI generate
+  qsa('.btn.ai').forEach(btn=>btn.addEventListener('click',()=>{ const style=btn.dataset.style; generateAI(style, btn); }));
   on('improve','click',()=>{description.value=(description.value||'')+' Levereras rengjord och testad.'; updatePreview(); recalc();});
   on('summarize','click',()=>{const s=(description.value||'').split(/[.?!]/).map(t=>t.trim()).filter(Boolean); description.value=s.slice(0,2).join('. ')+(s.length>2?' …':''); updatePreview(); recalc();});
 
@@ -62,20 +58,14 @@
         const res=await fetch(`${BACKEND}/generate-description`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({style,title:t,price:p,condition:c,notes:n,city:k})});
         if(res.ok){ const data=await res.json(); description.value = sanitize(data.description||''); }
         else { description.value = fallbackAI(style); }
-      }else{
-        description.value = fallbackAI(style);
-      }
+      }else{ description.value = fallbackAI(style); }
     }catch(e){ description.value=fallbackAI(style); }
     finally{ btn.disabled=false; btn.textContent=old; updatePreview(); recalc(); }
   }
   function sanitize(s=''){
-    return s.replace(/(^|\s)#{1,6}\s*/g,'$1')
-      .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1')
-      .replace(/`{1,3}[^`]*`{1,3}/g,'')
-      .replace(/^\s*[-*•]\s+/gm,'· ')
-      .replace(/[ \t]+\n/g,'\n')
-      .replace(/\n{3,}/g,'\n\n')
-      .trim();
+    return s.replace(/(^|\s)#{1,6}\s*/g,'$1').replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1')
+      .replace(/`{1,3}[^`]*`{1,3}/g,'').replace(/^\s*[-*•]\s+/gm,'· ')
+      .replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
   }
   function fallbackAI(m){
     const b=title.value||'Produkten';
@@ -84,12 +74,18 @@
     return `${b} i utmärkt skick med pålitlig prestanda. Levereras med tillbehör. Hör av dig vid frågor eller bud.`;
   }
 
-  // Images: append, compress (max 1200, q=0.8), drag-reorder in gallery, set-as-cover, lightbox rotate
-  let thumbs=[]; // {id,src,rotation}
+  // Images
+  let thumbs=[]; // [{id,src,rotation}]
   const fileInput=doc('photos'), drop=doc('drop');
+
+  // Click-to-upload on the big box (except when clicking tools)
+  drop.addEventListener('click', (e)=>{
+    if(e.target.closest('.tools') || e.target.closest('.cover-btn') || e.target.closest('.thumb')) return;
+    fileInput.click();
+  });
   fileInput.addEventListener('change', e=>handleFiles(e.target.files));
   drop.addEventListener('dragover', e=>{e.preventDefault();});
-  drop.addEventListener('drop', e=>{e.preventDefault(); handleFiles(e.dataTransfer.files);});
+  drop.addEventListener('drop', e=>{e.preventDefault();if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);});
 
   function handleFiles(fileList){
     const incoming=Array.from(fileList||[]).slice(0, Math.max(0, 10 - thumbs.length));
@@ -122,71 +118,120 @@
     });
   }
 
+  // ---- Gallery render (with both hero badge + cover button present) ----
   function renderGallery(){
     gallery.innerHTML='';
     thumbs.forEach((t,idx)=>{
-      const w=document.createElement('div'); w.className='thumb'; w.setAttribute('draggable','true'); if(idx===0) w.classList.add('is-hero');
-      w.dataset.id = String(t.id);
+      const w=document.createElement('div');
+      w.className='thumb'; w.setAttribute('draggable','true'); w.dataset.id = String(t.id);
       w.innerHTML=`
         <img data-id="${t.id}" style="transform: rotate(${t.rotation}deg)" src="${t.src}"/>
-        ${idx===0?'<div class="badge-hero">Omslag</div>':''}
-        <button class="cover-btn" data-cover="${t.id}" title="Sätt som omslag">Sätt som omslag</button>
-        <div class="tools">
+        <div class="badge-hero" data-role="badge">Omslag</div>
+        <button class="cover-btn" data-cover="${t.id}" title="Sätt som omslag">Omslag</button>
+        <div class="tools" data-tools>
           <div class="tool" data-rot="${t.id}" title="Rotera">⟳</div>
           <div class="tool" data-view="${t.id}" title="Visa">🔍</div>
           <div class="tool" data-del="${t.id}" title="Ta bort">✕</div>
         </div>`;
       gallery.appendChild(w);
     });
-  
-  function renderPreviewThumbs(){
-    const box = previewPhotos;
-    if(!box) return;
-    box.innerHTML='';
-    if(!thumbs.length){ box.textContent='Bilder visas här'; return; }
-    thumbs.forEach(t=>{
-      const img=document.createElement('img');
-      img.src=t.src;
-      img.className='mini';
-      img.style.transform=`rotate(${t.rotation}deg)`;
-      box.appendChild(img);
+    updateHeroBadges();
+    wireDrag();
+  }
+
+  function updateHeroBadges(){
+    const nodes = Array.from(gallery.querySelectorAll('.thumb'));
+    nodes.forEach((el,i)=>{
+      el.classList.toggle('is-hero', i===0);
+      const badge = el.querySelector('[data-role="badge"]');
+      const cover = el.querySelector('.cover-btn');
+      if(badge) badge.style.display = i===0 ? 'inline-block' : 'none';
+      if(cover) cover.style.display = i===0 ? 'none' : 'inline-block';
     });
   }
-}
 
-  // Drag to reorder (gallery)
-  let dragId=null;
+  // ---- Preview mirrors order ----
+  function renderPreviewThumbs(){
+    previewHero.innerHTML='';
+    if(thumbs.length){
+      const img=document.createElement('img');
+      img.src=thumbs[0].src; img.style.transform=`rotate(${thumbs[0].rotation}deg)`;
+      previewHero.appendChild(img);
+    }
+    previewStrip.innerHTML='';
+    thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
+  }
+
+  // ---- Drag & drop reorder (DOM-in-place, no duplicates) ----
+  let dragId=null, dragEl=null, lastOverId=null;
+  function wireDrag(){
+    // remove previous listeners by re-attaching container-level handlers only once
+  }
+  // container-level handlers (delegated)
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
-    dragId = thumb.dataset.id; thumb.classList.add('dragging');
-    e.dataTransfer.effectAllowed='move';
+    dragEl = thumb; dragId = thumb.dataset.id; thumb.classList.add('dragging');
+    if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', dragId);}catch{} }
   });
-  gallery.addEventListener('dragend', e=>{
-    const thumb=e.target.closest('.thumb'); if(thumb) thumb.classList.remove('dragging');
-    window.__lastOverId = null;
+  gallery.addEventListener('dragend', ()=>{
+    if(dragEl){ dragEl.classList.remove('dragging'); }
+    dragEl=null; dragId=null; lastOverId=null;
+    updateHeroBadges(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
   });
   gallery.addEventListener('dragover', e=>{
     e.preventDefault();
-    const over=e.target.closest('.thumb'); if(!over) return;
-    const overId=over.dataset.id; if(!dragId || dragId===overId || overId===window.__lastOverId) return;
-    window.__lastOverId = overId;
+    const over=e.target.closest('.thumb'); if(!over || !dragEl) return;
+    const overId=over.dataset.id; if(!overId || overId===dragId || overId===lastOverId) return;
+
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
     const toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
     if(fromIdx<0 || toIdx<0) return;
+
+    // Reorder data
     const item=thumbs.splice(fromIdx,1)[0];
-    thumbs.splice(toIdx,0,item);
-    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
+    const insertIdx = fromIdx < toIdx ? toIdx : toIdx; // visual nextSibling handles forward/backward
+    thumbs.splice(insertIdx,0,item);
+
+    // Reorder DOM (insert after when moving forward)
+    if(fromIdx < toIdx) gallery.insertBefore(dragEl, over.nextSibling);
+    else gallery.insertBefore(dragEl, over);
+
+    lastOverId = overId;
+    updateHeroBadges();
   });
-// Click tools: rotate, view, delete, set cover
+
+  // Tools (rotate/view/delete/cover)
   gallery.addEventListener('click', e=>{
     const rot=e.target.getAttribute('data-rot');
     const view=e.target.getAttribute('data-view');
     const del=e.target.getAttribute('data-del');
     const cov=e.target.getAttribute('data-cover');
-    if(rot){ const t=thumbs.find(x=>String(x.id)===rot); if(t){ t.rotation=(t.rotation+90)%360; renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
+
+    if(rot){
+      const t=thumbs.find(x=>String(x.id)===rot);
+      if(t){ t.rotation=(t.rotation+90)%360;
+        const img = gallery.querySelector(`.thumb[data-id="${t.id}"] img`);
+        if(img) img.style.transform=`rotate(${t.rotation}deg)`;
+        renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
+      }
+    }
     if(view){ openLB(view); }
-    if(del){ thumbs=thumbs.filter(x=>String(x.id)!==del); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); }
-    if(cov){ const i=thumbs.findIndex(x=>String(x.id)===cov); if(i>0){ const [it]=thumbs.splice(i,1); thumbs.unshift(it); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
+    if(del){
+      const idx = thumbs.findIndex(x=>String(x.id)===del);
+      if(idx>-1){ thumbs.splice(idx,1); const el = gallery.querySelector(`.thumb[data-id="${del}"]`); el?.remove();
+        updateHeroBadges(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
+      }
+    }
+    if(cov){
+      const i=thumbs.findIndex(x=>String(x.id)===cov);
+      if(i>0){
+        const [it]=thumbs.splice(i,1); thumbs.unshift(it);
+        // Move DOM node to front
+        const node = gallery.querySelector(`.thumb[data-id="${cov}"]`);
+        if(node){ gallery.insertBefore(node, gallery.firstChild); }
+        updateHeroBadges(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
+      }
+    }
   });
 
   // Lightbox
@@ -198,9 +243,9 @@
   function closeLB(){ lb.classList.remove('show'); }
   lbPrev.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex-1+thumbs.length)%thumbs.length; renderLB();});
   lbNext.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex+1)%thumbs.length; renderLB();});
-  lbRotate.addEventListener('click',()=>{ if(!thumbs.length) return; thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; renderLB(); renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();});
+  lbRotate.addEventListener('click',()=>{ if(!thumbs.length) return; thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; renderLB(); const did=thumbs[lbIndex].id; const img=gallery.querySelector(`.thumb[data-id="${did}"] img`); if(img) img.style.transform=`rotate(${thumbs[lbIndex].rotation}deg)`; renderPreviewThumbs(); persistThumbsIfDraft();});
 
-  // Preview + Quality
+  // Preview + quality
   [title, price, condition, description].forEach(el=>el.addEventListener('input',()=>{ updatePreview(); recalc(); }));
   function updatePreview(){
     preview.querySelector('.ph-title').textContent=title.value||'Din titel visas här';
@@ -215,7 +260,10 @@
     if(condition.value)score+=15; else sug.push('Välj skick (+15)');
     if((description.value||'').length>40)score+=20; else sug.push('Lägg till beskrivning (+20)');
     const quickMode=!document.body.classList.contains('mode-pro');
-    if((quickMode && thumbs.length>=1) || (!quickMode && thumbs.length>=3)) score+=15; else sug.push(quickMode ? 'Lägg till minst 1 bild (+15)' : 'Lägg till minst 3 bilder (+15)');
+    if((quickMode && thumbs.length>=1) || (!quickMode && thumbs.length>=3)) score+=15;
+    else sug.push(quickMode ? 'Lägg till minst 1 bild (+15)' : 'Lägg till minst 3 bilder (+15)');
+    const essentialsOk = !!(title.value && price.value && condition.value && (description.value||'').length>40 && thumbs.length>=1);
+    if(quickMode && essentialsOk) score+=20; // lets quick mode reach 100
     if(document.body.classList.contains('mode-pro')){
       if((notes&&notes.value.trim())||(city&&city.value.trim())||(tags&&tags.value.trim()))score+=20;
       else sug.push('Fyll i anmärkning/ort/taggar (+20)');
@@ -226,28 +274,23 @@
     deriveStatusFromFields();
   }
 
-  // Marketplace state + progress + sold
+  // Marketplaces
   const state=loadMarkets(); updateAll(); updateProgress();
   qsa('[data-open]').forEach(btn=>btn.addEventListener('click',()=>{
-  const m=btn.getAttribute('data-open'); const txt=formatFor(m);
-  const url={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sell'};
-  window.open(url[m],'_blank');
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(String(txt).replace(/
-?
-/g,'
-')).catch(()=>{});
-  }
-}));
+    const m=btn.getAttribute('data-open'); const txt=formatFor(m);
+    const url={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sell'};
+    window.open(url[m],'_blank');
+    if(navigator.clipboard?.writeText){ navigator.clipboard.writeText(String(txt).replace(/\r?\n/g,'\n')).catch(()=>{}); }
+  }));
   qsa('[data-complete]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-complete'); if(soldFlag) return;
     state[m]=!state[m]; saveMarkets(); updateAll(); updateProgress(); deriveStatusFromFields(); persistMarketsIfDraft();
+    btn.setAttribute('aria-pressed', String(!!state[m]));
   }));
-
   function updateAll(){ Object.keys(state).forEach(m=>{
     byId(`${m}-status`).classList.toggle('completed', !!state[m]);
     const b=qs(`.complete-btn[data-complete="${m}"]`);
-    b.classList.toggle('completed', !!state[m]);
+    if(b){ b.classList.toggle('completed', !!state[m]); b.setAttribute('aria-pressed', String(!!state[m]));}
   }); }
   function updateProgress(){
     const done=Object.values(state).filter(Boolean).length;
@@ -256,16 +299,16 @@
   }
   function formatFor(m){
     const condText=condition.value||'';
-    if(m==='tradera')return `${title.value}\n\n${description.value}\n\nSkick: ${condText}\nUtgångspris: ${price.value} SEK\nTaggar: ${tags.value}`;
-    if(m==='blocket')return `${title.value} - ${price.value} SEK\n\n${description.value}\n\nSkick: ${condText}\nTaggar: ${tags.value}`;
-    if(m==='facebook')return `${title.value}\n${price.value} SEK\n\n${description.value}\n\nTaggar: ${tags.value}`;
-    if(m==='ebay')return `${title.value} [${condText}]\n\n${description.value}\n\nPrice: ${price.value} SEK\nTags: ${tags.value}`;
+    if(m==='tradera')return `${title.value}\n\n${description.value}\n\nSkick: ${condText}\nUtgångspris: ${price.value} SEK\nTaggar: ${tags?.value||''}`;
+    if(m==='blocket')return `${title.value} - ${price.value} SEK\n\n${description.value}\n\nSkick: ${condText}\nTaggar: ${tags?.value||''}`;
+    if(m==='facebook')return `${title.value}\n${price.value} SEK\n\n${description.value}`; // no tags on FB
+    if(m==='ebay')return `${title.value} [${condText}]\n\n${description.value}\n\nPrice: ${price.value} SEK\nTags: ${tags?.value||''}`;
     return `${title.value}\n${description.value}`;
   }
   function loadMarkets(){ try{return JSON.parse(localStorage.getItem('avp3.markets')||'{"tradera":false,"blocket":false,"facebook":false,"ebay":false}');}catch(e){return {"tradera":false,"blocket":false,"facebook":false,"ebay":false};} }
   function saveMarkets(){ localStorage.setItem('avp3.markets', JSON.stringify(state)); }
 
-  // Status derivation
+  // Status + sold toggle (reversible)
   let currentStatus='draft', soldFlag=false;
   function deriveStatusFromFields(){
     if(soldFlag){ currentStatus='sold'; return; }
@@ -275,16 +318,20 @@
     else if(hasReq){ currentStatus='ready'; }
     else { currentStatus='draft'; }
   }
-
-  // Sold button -> confetti + lock
-  on('mark-sold','click',()=>{
-    soldFlag=true; currentStatus='sold'; confetti(); toastMsg('Markerad som såld 🎉');
-    qsa('.complete-btn').forEach(b=>b.setAttribute('disabled','disabled'));
-    qsa('.complete-btn').forEach(b=>b.classList.add('completed'));
-    Object.keys(state).forEach(k=>state[k]=true); saveMarkets(); updateAll(); updateProgress(); persistMarketsIfDraft();
+  const soldBtn = doc('mark-sold');
+  soldBtn.addEventListener('click',()=>{
+    soldFlag=!soldFlag; soldBtn.setAttribute('aria-pressed', String(soldFlag));
+    if(soldFlag){
+      currentStatus='sold'; confetti(); toastMsg('Markerad som såld 🎉');
+      qsa('.complete-btn').forEach(b=>b.setAttribute('disabled','disabled'));
+      qsa('.complete-btn').forEach(b=>b.classList.add('completed'));
+    }else{
+      currentStatus='draft'; toastMsg('Såld-status ångrad');
+      qsa('.complete-btn').forEach(b=>b.removeAttribute('disabled'));
+    }
+    updateAll(); updateProgress(); persistMarketsIfDraft();
   });
 
-  // Confetti (tiny burst)
   function confetti(){
     const canvas=confettiCanvas; const ctx=canvas.getContext('2d');
     canvas.width=window.innerWidth; canvas.height=window.innerHeight; canvas.classList.add('show');
@@ -294,17 +341,12 @@
     step();
   }
 
-  // Drafts (hero + status tag + snippet) + live updates if editing a saved draft
+  // Drafts
   const draftList=byId('draft-list');
   on('save-draft','click',saveDraft);
   function saveDraft(){
     const id=Date.now();
-    const d={
-      id, title:title.value, price:price.value, condition:condition.value,
-      city:city?.value||'', tags:tags.value, notes:notes?.value||'',
-      description:description.value, thumbs, status:currentStatus, sold:soldFlag,
-      markets:state, date:new Date().toISOString()
-    };
+    const d={id, title:title.value, price:price.value, condition:condition.value, city:city?.value||'', tags:tags?.value||'', notes:notes?.value||'', description:description.value, thumbs, status:currentStatus, sold:soldFlag, markets:state, date:new Date().toISOString()};
     const arr=[d, ...loadDrafts()].slice(0,15);
     localStorage.setItem('avp3.drafts', JSON.stringify(arr));
     currentDraftId=id;
@@ -318,17 +360,11 @@
     drafts.forEach(d=>{
       const cover=d.thumbs && d.thumbs[0] ? d.thumbs[0].src : null;
       const wrap=document.createElement('div'); wrap.className='draft-item';
-      wrap.innerHTML=`
-        <div class="draft-cover">${cover?`<img src="${cover}" alt="Omslag">`:'<span style="color:#AEB8C7">—</span>'}</div>
-        <div class="draft-main">
-          <div class="title"><span>${esc(d.title||'Utkast')}</span> <span class="badge ${d.status||'draft'}">${labelForStatus(d.status)}</span></div>
-          <div class="snippet">${esc((d.description||'').slice(0,100))}${(d.description||'').length>100?'…':''}</div>
-          <div class="draft-meta">${new Date(d.date).toLocaleString('sv-SE')}</div>
-        </div>
-        <div class="draft-actions">
-          <button class="pill" data-load="${d.id}">Ladda</button>
-          <button class="pill" data-del="${d.id}">Ta bort</button>
-        </div>`;
+      wrap.innerHTML=`<div class="draft-cover">${cover?`<img src="${cover}" alt="Omslag">`:'<span style="color:#AEB8C7">—</span>'}</div>
+        <div class="draft-main"><div class="title"><span>${esc(d.title||'Utkast')}</span> <span class="badge ${d.status||'draft'}">${labelForStatus(d.status)}</span></div>
+        <div class="snippet">${esc((d.description||'').slice(0,100))}${(d.description||'').length>100?'…':''}</div>
+        <div class="draft-meta">${new Date(d.date).toLocaleString('sv-SE')}</div></div>
+        <div class="draft-actions"><button class="pill" data-load="${d.id}">Ladda</button><button class="pill" data-del="${d.id}">Ta bort</button></div>`;
       draftList.appendChild(wrap);
     });
   }
@@ -341,13 +377,13 @@
     const d=loadDrafts().find(x=>x.id===id); if(!d)return;
     currentDraftId=id;
     title.value=d.title||''; price.value=d.price||''; condition.value=d.condition||'';
-    city&&(city.value=d.city||''); tags.value=d.tags||''; notes&&(notes.value=d.notes||'');
+    city&&(city.value=d.city||''); tags&&(tags.value=d.tags||''); notes&&(notes.value=d.notes||'');
     description.value=d.description||''; thumbs=d.thumbs||[];
     soldFlag=!!d.sold; currentStatus=d.status||'draft';
     Object.keys(state).forEach(k=> state[k] = !!(d.markets && d.markets[k]) );
     saveMarkets(); updateAll(); updateProgress();
     qsa('.complete-btn').forEach(b=> b.toggleAttribute('disabled', soldFlag) );
-    renderChips(); renderGallery(); renderPreviewThumbs(); updatePreview(); recalc();
+    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc();
     toastMsg('Utkast laddat');
   }
   function deleteDraft(id){
@@ -356,53 +392,33 @@
     if(currentDraftId===id) currentDraftId=null;
     renderDrafts(); toastMsg('Utkast borttaget');
   }
-  function labelForStatus(s){ return s==='ready'?'Redo': s==='published'?'Publicerad': s==='synkad'?'Synkad': s==='sold'?'Såld':'Utkast'; }
-
-  // Persist helpers for live cover/reorder updates
+  function labelForStatus(s){ return s==='ready'?'Redo': s==='published'?'Publicerad': s==='synced'?'Synkad': s==='sold'?'Såld':'Utkast'; }
   function persistThumbsIfDraft(){
     if(!currentDraftId) return;
-    const arr=loadDrafts();
-    const idx=arr.findIndex(d=>d.id===currentDraftId);
+    const arr=loadDrafts(); const idx=arr.findIndex(d=>d.id===currentDraftId);
     if(idx>=0){ arr[idx].thumbs = thumbs; localStorage.setItem('avp3.drafts', JSON.stringify(arr)); renderDrafts(); }
   }
   function persistMarketsIfDraft(){
     if(!currentDraftId) return;
-    const arr=loadDrafts();
-    const idx=arr.findIndex(d=>d.id===currentDraftId);
+    const arr=loadDrafts(); const idx=arr.findIndex(d=>d.id===currentDraftId);
     if(idx>=0){ arr[idx].markets = state; arr[idx].status=currentStatus; arr[idx].sold=soldFlag; localStorage.setItem('avp3.drafts', JSON.stringify(arr)); renderDrafts(); }
   }
 
-  // Clear all
+  // Clear
   on('clear-all','click',()=>{
-    title.value=''; price.value=''; condition.value=''; city&&(city.value=''); tags.value=''; notes&&(notes.value=''); description.value='';
+    title.value=''; price.value=''; condition.value=''; city&&(city.value=''); tags&&(tags.value=''); notes&&(notes.value=''); description.value='';
     thumbs=[]; renderGallery(); renderPreviewThumbs(); renderChips();
     Object.keys(state).forEach(k=>state[k]=false); saveMarkets(); updateAll(); updateProgress();
     soldFlag=false; currentStatus='draft'; qsa('.complete-btn').forEach(b=>b.removeAttribute('disabled'));
     updatePreview(); recalc(); toastMsg('Rensat');
   });
 
-  // Seed a demo draft on first run
-  seedDemo();
-  function seedDemo(){
-    const has=loadDrafts().length>0; if(has) { renderDrafts(); return; }
-    const placeholder='data:image/svg+xml;base64,'+btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180"><rect width="100%" height="100%" fill="#e9eef9"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Inter" font-size="16" fill="#6b7aa3">Bild</text></svg>`);
-    const demo={
-      id:Date.now()-12345,
-      title:'ASUS Radeon RX 7600XT 16GB', price:'3900', condition:'Som nytt', city:'Stockholm',
-      tags:'asus, radeon, 7600xt, 16gb', notes:'Originalkartong, kvitto finns.',
-      description:'Stabil och tyst GPU i mycket gott skick. Använd sparsamt och fungerar perfekt. Levereras rengjord.',
-      thumbs:[{id:1,src:placeholder,rotation:0}],
-      status:'published', sold:false,
-      markets:{tradera:true, blocket:false, facebook:true, ebay:false},
-      date:new Date().toISOString()
-    };
-    const arr=[demo]; localStorage.setItem('avp3.drafts', JSON.stringify(arr));
-    renderDrafts();
-  }
-
   // Helpers
   function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
   function toastMsg(t){ toast.textContent=t; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
   function doc(id){return document.getElementById(id)} function byId(id){return document.getElementById(id)} function qs(s){return document.querySelector(s)} function qsa(s){return Array.from(document.querySelectorAll(s))}
   function on(id,ev,fn){ const el=byId(id); el&&el.addEventListener(ev,fn); }
+
+  // boot
+  renderGallery(); updatePreview(); renderPreviewThumbs(); recalc();
 })();
