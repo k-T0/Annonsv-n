@@ -76,7 +76,7 @@
 
   // Images
   let thumbs=[];
-  const fileInput=doc('photos'), drop=doc('drop'), groupHandle=doc('group-handle');
+  const fileInput=doc('photos'), drop=doc('drop'), dragAll=doc('drag-all');
   drop.addEventListener('click', (e)=>{ if(e.target.id==='gallery' || e.target.closest('.tools') || e.target.closest('.cover-btn')) return; fileInput.click(); });
   fileInput.addEventListener('change', e=>handleFiles(e.target.files));
   drop.addEventListener('dragover', e=>{e.preventDefault();});
@@ -87,7 +87,7 @@
     if(!incoming.length) return;
     Promise.all(incoming.map(f=>compressToThumb(f,1200,0.8))).then(datas=>{
       datas.forEach(data=>{ if(data) thumbs.push({src:data, rotation:0, id:Date.now()+Math.random()}); });
-      renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
+      renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); updateDragAllState();
     });
   }
   function compressToThumb(file, max=1200, quality=0.8){
@@ -129,6 +129,7 @@
         </div>`;
       gallery.appendChild(w);
     });
+    updateDragAllState();
   }
 
   function renderPreviewThumbs(){
@@ -142,7 +143,7 @@
     thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
   }
 
-  // Drag to reorder with midpoint “gravity” (smooth, no dupes)
+  // Drag-to-reorder with midpoint gravity (smooth & no duplicates)
   let dragId=null;
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
@@ -184,7 +185,7 @@
   gallery.addEventListener('dragend', endDrag);
   gallery.addEventListener('drop', (e)=>{ e.preventDefault(); endDrag(); });
 
-  // Tools: rotate / view / delete / set cover
+  // Tools
   gallery.addEventListener('click', e=>{
     const rot=e.target.getAttribute('data-rot');
     const view=e.target.getAttribute('data-view');
@@ -236,7 +237,7 @@
     deriveStatusFromFields();
   }
 
-  // Marketplaces
+  // Marketplaces (unchanged)
   const state=loadMarkets(); updateAll(); updateProgress();
   qsa('[data-open]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-open'); const txt=formatFor(m);
@@ -308,55 +309,49 @@
     step();
   }
 
-  // Group-drag: drag the round handle to rotate the whole set left/right
-  if(groupHandle){
-    let startX=0, lastShift=0, active=false, unit=132;
-    function measureUnit(){
-      const first = gallery.querySelector('.thumb');
-      if(!first) return 132;
-      const rect = first.getBoundingClientRect();
-      const gap = parseInt(getComputedStyle(gallery).gap||'12',10);
-      return rect.width + gap;
-    }
-    function applyOrderDOM(){
-      const map = new Map(Array.from(gallery.children).map(el=>[el.dataset.id, el]));
-      thumbs.forEach(t=>{ const el=map.get(String(t.id)); if(el) gallery.appendChild(el); });
-    }
-    function onMove(ev){
-      if(!active) return;
-      const x = (ev.touches? ev.touches[0].clientX : ev.clientX);
-      const dx = x - startX;
-      const shift = Math.trunc(dx / unit);
-      if(shift !== lastShift){
-        const diff = shift - lastShift;
-        if(diff>0){ for(let i=0;i<diff;i++){ thumbs.unshift(thumbs.pop()); } }
-        else { for(let i=0;i<-diff;i++){ thumbs.push(thumbs.shift()); } }
-        applyOrderDOM(); renderPreviewThumbs();
-        lastShift = shift;
+  // ===== Drag ALL images pill (exports real File objects) =====
+  if(dragAll){
+    dragAll.addEventListener('dragstart',(e)=>{
+      if(!thumbs.length){ e.preventDefault(); return; }
+      const dt = e.dataTransfer; if(!dt){ e.preventDefault(); return; }
+      dt.effectAllowed='copy';
+
+      // build File objects from our data URLs (sync; no async fetch needed)
+      const files = thumbs.slice(0,10).map((t,i)=>{
+        const blob = dataURLtoBlob(t.src);
+        const name = `annonsvan-${String(i+1).padStart(2,'0')}.jpg`;
+        try{ return new File([blob], name, {type: 'image/jpeg'}); }
+        catch{ blob.name = name; return blob; }
+      });
+      if(dt.items && dt.items.add){
+        files.forEach(f=>{ try{ dt.items.add(f); }catch{} });
       }
-    }
-    function end(){
-      if(!active) return;
-      active=false; groupHandle.classList.remove('active');
-      renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', end);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', end);
-    }
-    groupHandle.addEventListener('pointerdown', (e)=>{
-      if(!thumbs.length) return;
-      active=true; startX=e.clientX; lastShift=0; unit=measureUnit(); groupHandle.classList.add('active');
-      window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', end);
-    });
-    groupHandle.addEventListener('touchstart', (e)=>{
-      if(!thumbs.length) return;
-      active=true; startX=e.touches[0].clientX; lastShift=0; unit=measureUnit(); groupHandle.classList.add('active');
-      window.addEventListener('touchmove', onMove, {passive:false}); window.addEventListener('touchend', end);
+
+      // custom drag image with count
+      const dragImg = document.createElement('canvas');
+      dragImg.width=96; dragImg.height=96;
+      const ctx=dragImg.getContext('2d');
+      ctx.fillStyle='rgba(17,24,39,.92)'; ctx.beginPath(); ctx.arc(48,48,44,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='700 28px Inter,system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(files.length),48,48);
+      dt.setDragImage(dragImg, 48, 48);
     });
   }
+  function dataURLtoBlob(dataUrl){
+    const parts=dataUrl.split(','); const mime=(parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
+    const bstr=atob(parts[1]); const len=bstr.length; const u8=new Uint8Array(len);
+    for(let i=0;i<len;i++) u8[i]=bstr.charCodeAt(i);
+    return new Blob([u8],{type:mime});
+  }
+  function updateDragAllState(){
+    if(!dragAll) return;
+    const disabled = thumbs.length===0;
+    dragAll.toggleAttribute('disabled', disabled);
+    dragAll.setAttribute('aria-disabled', String(disabled));
+    dragAll.title = disabled ? 'Lägg till bilder först' : 'Dra alla bilder till en marknadsplats';
+  }
 
-  // Drafts (unchanged)
+  // ===== Drafts (unchanged) =====
   const draftList=byId('draft-list');
   on('save-draft','click',saveDraft);
   function saveDraft(){
