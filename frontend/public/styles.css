@@ -215,3 +215,63 @@ input[type=number]{-moz-appearance:textfield}
 /* confetti */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:35;display:none}
 .confetti.show{display:block}
+
+/* === Responsive layout without touching desktop === */
+
+/* Large tablets / small laptops: two columns */
+@media (max-width: 1200px){
+  .shell{
+    max-width: 1100px;
+    grid-template-columns: 1fr 1fr; /* left + center */
+  }
+  .pane.right{ grid-column: 1 / -1; } /* right card drops under */
+  .preview-hero{ height: 320px; }
+  .brand{ gap:10px }
+  .logo{ font-size: 38px; }
+}
+
+/* Tablets & phones: single column stack */
+@media (max-width: 900px){
+  .ph-title{ font-size: 26px; }
+  .app-header{ max-width: 740px; padding: 0 16px; }
+  .logo{ font-size: 34px; }
+  .shell{
+    width: 100%;
+    max-width: 740px;
+    padding: 0 12px;
+    grid-template-columns: 1fr;   /* stack all three cards */
+    gap: 16px;
+  }
+  .card-body{ padding: 18px; }
+  .preview{ min-height: 0; }
+  .preview-hero{ height: 280px; }
+  .preview-strip img{ width: 56px; height: 56px; }
+
+  /* Inputs: rows become vertical */
+  .row{ flex-direction: column; gap: 12px; }
+
+  /* Actions wrap neatly */
+  .actions{ display:flex; flex-wrap:wrap; gap:10px; }
+  .pill, .btn{ padding:10px 14px; }
+
+  /* Marketplace: keep one row look, buttons wrap if needed */
+  .marketplace-item{ grid-template-columns: 1fr; }
+  .action-buttons{ justify-content:flex-start; flex-wrap: wrap; gap:8px; }
+}
+
+/* Small phones */
+@media (max-width: 520px){
+  .logo{ font-size: 30px; }
+  .preview-hero{ height: 220px; }
+  .preview-strip img{ width: 52px; height: 52px; }
+  .input-wrap input, .input-wrap textarea{ padding-right: 110px; }
+
+  /* Dropzone grid breathes a bit */
+  .gallery.inside{ grid-template-columns: repeat(auto-fill, minmax(104px,1fr)); gap:10px; }
+}
+
+/* Ultra small */
+@media (max-width: 380px){
+  .logo{ font-size: 28px; }
+  .preview-hero{ height: 200px; }
+}
