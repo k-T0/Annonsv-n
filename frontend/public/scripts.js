@@ -142,13 +142,12 @@
     thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
   }
 
-  // Drag to reorder with "gravity" (midpoint crossing)
+  // Drag to reorder with midpoint logic (keeps it stable, no dupes)
   let dragId=null;
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
     dragId = thumb.dataset.id; thumb.classList.add('dragging');
     e.dataTransfer.effectAllowed='move';
-    // nicer drag preview
     const img = new Image(); img.src = thumb.querySelector('img').src; e.dataTransfer.setDragImage(img, 32, 32);
   });
   gallery.addEventListener('dragover', e=>{
@@ -162,7 +161,7 @@
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
     let toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
     if(!before) toIdx += 1;
-    if(toIdx>fromIdx) toIdx--; // adjust for removal
+    if(toIdx>fromIdx) toIdx--;
 
     if(fromIdx===toIdx || fromIdx<0 || toIdx<0) return;
 
@@ -170,7 +169,6 @@
     const item=thumbs.splice(fromIdx,1)[0];
     thumbs.splice(toIdx,0,item);
 
-    // DOM move without full re-render (prevents flicker & dupes)
     if(draggingEl){
       if(before) gallery.insertBefore(draggingEl, over);
       else gallery.insertBefore(draggingEl, over.nextSibling);
@@ -208,24 +206,23 @@
   const lb=doc('lightbox'), lbImg=doc('lightbox-image'); const lbPrev=doc('lb-prev'), lbNext=doc('lb-next'), lbRotate=doc('lb-rotate'), lbClose=doc('lb-close');
   qsa('[data-lightbox-close]').forEach(n=>n.addEventListener('click',closeLB)); lbClose.addEventListener('click',closeLB);
   let lbIndex=0;
+  function openLB(id){ lbIndex=Math.max(0, thumbs.findIndex(t=>String(t.id)===id)); if(lbIndex<0)return; renderLB(); lb.classList.add('show');}
 
-  function openLB(id){ lbIndex=Math.max(0, thumbs.findIndex(t=>String(t.id)===id)); if(lbIndex<0)return; renderLB(); lb.classList.add('show'); }
-
-  // >>> UPDATED: keep image inside viewport on load/rotate/resize
+  // ——— NEW: fit the image after load/rotation; always bound to viewport ———
   function renderLB(){
     if(!thumbs.length) return;
-    const t=thumbs[lbIndex];
-    lbImg.onload = fitLightbox;          // ensure scaling after (re)load
-    lbImg.src=t.src;
-    fitLightbox();                        // also try immediately (cached)
+    const t = thumbs[lbIndex];
+    lbImg.onload = fitLightbox;
+    lbImg.src = t.src;
+    fitLightbox(); // handle cache case
   }
   function fitLightbox(){
-    if(!thumbs.length) return;
+    if(!thumbs.length || !lb.classList.contains('show')) return;
     const t = thumbs[lbIndex];
-    const deg = (t.rotation||0) % 360;
-    const odd = Math.abs(deg) % 180 === 90;      // 90 or 270 -> swap w/h
+    const deg = (t.rotation || 0) % 360;
+    const odd = Math.abs(deg) % 180 === 90;
 
-    const boxW = window.innerWidth * 0.80;       // match .lightbox-inner img rules
+    const boxW = window.innerWidth * 0.80;
     const boxH = window.innerHeight * 0.70;
 
     const iw = lbImg.naturalWidth  || 1;
@@ -235,26 +232,15 @@
     const rh = odd ? iw : ih;
 
     const scale = Math.min(boxW / rw, boxH / rh);
-
-    lbImg.style.transformOrigin = 'center center';
     lbImg.style.transform = `translateZ(0) rotate(${deg}deg) scale(${scale})`;
   }
   window.addEventListener('resize', fitLightbox);
-  // <<< UPDATED end
+  // ————————————————————————————————————————————————————————————————
 
   function closeLB(){ lb.classList.remove('show'); }
-
   lbPrev.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex-1+thumbs.length)%thumbs.length; renderLB();});
   lbNext.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex+1)%thumbs.length; renderLB();});
-
-  // >>> UPDATED: after rotating, re-fit the image
-  lbRotate.addEventListener('click',()=>{ 
-    if(!thumbs.length) return; 
-    thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; 
-    renderLB(); 
-    renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();
-  });
-  // <<< UPDATED end
+  lbRotate.addEventListener('click',()=>{ if(!thumbs.length) return; thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; renderLB(); renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();});
 
   // Preview + Quality
   [title, price, condition, description].forEach(el=>el.addEventListener('input',()=>{ updatePreview(); recalc(); }));
@@ -356,7 +342,7 @@
     step();
   }
 
-  // Group-drag: (kept; no changes)
+  // Optional group-handle (kept as-is, safe no-op if missing)
   if(groupHandle){
     let startX=0, lastShift=0, active=false, unit=132;
     function measureUnit(){
@@ -404,7 +390,7 @@
     });
   }
 
-  // Drafts (unchanged)
+  // Drafts
   const draftList=byId('draft-list');
   on('save-draft','click',saveDraft);
   function saveDraft(){
