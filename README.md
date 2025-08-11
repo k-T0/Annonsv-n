@@ -50,13 +50,21 @@ AnnonsVän Pro is your control room for listings. **One ad → multiple marketpl
 
 <table>
   <tr>
-    <td width="33%"><img src="screenshots/1.png" alt="Studio overview" /></td>
-    <td width="33%"><img src="screenshots/2.png" alt="Image lightbox" /></td>
-    <td width="33%"><img src="screenshots/3.png" alt="Publishing checklist" /></td>
+    <td colspan="2" align="center">
+      <img src="screenshots/1.png" alt="Studio overview" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="screenshots/2.png" alt="Image lightbox" width="100%" />
+    </td>
+    <td width="50%" align="center">
+      <img src="screenshots/3.png" alt="Publishing checklist" width="100%" />
+    </td>
   </tr>
 </table>
 
-<sub align="center"><i>Studio, image tools, and marketplace checklist.</i></sub>
+<p align="center"><sub><i>Studio overview (top) · Lightbox & Checklist (bottom)</i></sub></p>
 
 ---
 
