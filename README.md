@@ -1,7 +1,7 @@
 # 📦 AnnonsVän Pro
 
 **Create once. Publish everywhere.**  
-A lightweight, browser‑based studio for crafting listings and publishing them to multiple marketplaces — fast.
+A lightweight, browser-based studio for crafting listings and publishing them to multiple marketplaces — fast.
 
 <p align="center">
   <a href="https://annonsvn.vercel.app/"><b>🚀 Open the App</b></a>
@@ -10,39 +10,52 @@ A lightweight, browser‑based studio for crafting listings and publishing them 
 <p align="center">
   <a href="https://annonsvn.vercel.app/">Live</a> •
   <a href="#-features">Features</a> •
+  <a href="#%EF%B8%8F-core-features">Core Features</a> •
   <a href="#-quickstart">Quickstart</a> •
   <a href="#-screenshots">Screenshots</a> •
   <a href="#-tech">Tech</a> •
-  <a href="#-roadmap">Roadmap</a> •
+  <a href="#-roadmap-v2">Roadmap</a> •
   <a href="#-faq">FAQ</a>
 </p>
 
 ---
 
 ## 💡 What is AnnonsVän Pro?
-AnnonsVän Pro is your control room for listings. **One ad → multiple marketplaces, without repeating yourself.** You write the listing once, AI drafts the description in Swedish, you drop in images (we compress locally), and then you **one‑click open** each marketplace with formatted content ready to paste. A subtle quality score nudges you to “ready” without getting in the way.
+AnnonsVän Pro is your control room for listings. **One ad → multiple marketplaces, no repetition.**  
+Write the listing once, let AI draft the Swedish description, drop in images (compressed locally), and **one-click open** each marketplace with formatted content ready to paste. A subtle quality score nudges you to “ready” without getting in the way.
 
 ---
 
 ## ✨ Features
 - **Unified listing form** – Title, price, condition, tags, notes; with a live preview.
-- **Image flow that feels good** – Drag & drop, cover image, reorder with visual feedback, rotate, fullscreen lightbox.
+- **Image flow that feels good** – Drag & drop, cover image, reorder with smooth visual feedback, rotate, fullscreen lightbox.
 - **AI description (Swedish)** – Minimal / Simple / Detailed styles via Gemini API (with graceful local fallback).
-- **Marketplace helpers** – Tradera, Blocket, Facebook Marketplace, eBay; copy‑ready text per platform + progress tracker.
-- **Drafts that survive refreshes** – Local autosave for listings, images, and per‑platform completion.
-- **Quality score** – Clear, constructive hints to reach a strong listing.
+- **Marketplace helpers** – Tradera, Blocket, Facebook Marketplace, eBay; copy-ready text per platform + progress tracker.
+- **Drafts that survive refreshes** – Local autosave for listings, images, and per-platform completion.
+- **Quality score** – Clear, actionable hints to reach a strong listing.
 - **No accounts, no setup** – It’s just the web. Open and go.
 
 ---
 
-## ⚡ Quickstart
-1. Open **[annonsvn.vercel.app](https://annonsvn.vercel.app/)**.  
-2. Enter **title, price, condition** → drag in a few images.  
-3. Click an **AI style** to draft the Swedish description.  
-4. **Preview** updates as you type; mark marketplaces **Klar** as you finish.  
-5. (Optional) **Save draft** — pick up later on the same device.
+## ⚙️ Core Features
+- **Unified listing form** — title, price, condition, notes, city.  
+- **Image box** — single modern dropzone, drag & reorder with a smooth “gravity” feel, rotate, lightbox, set cover (hero).  
+- **AI descriptions (Swedish)** — *Minimal*, *Enkel*, *Detaljerad*; cleans markdown; marketplace-safe plain text.  
+- **Preview** — large hero + strip, mirrors order live.  
+- **Multi-marketplace publishing** — platform-specific formatting and one-click “Open” + “Klar” tracking.  
+- **Drafts** — stored in the browser (`localStorage`), with cover image, status badge, snippet, timestamp.  
+- **Quality meter** — subtle score with actionable suggestions.
 
-> Tip: The first image in the gallery is used as the **cover**. Click “Omslag” on any image to promote it to hero.
+---
+
+## ⚡ Quickstart / How it works
+1. Open **[annonsvn.vercel.app](https://annonsvn.vercel.app/)**.  
+2. Enter **title, price, condition** → drag in your images.  
+3. Click an **AI style** to draft the Swedish description.  
+4. **Preview** updates live; mark marketplaces **Klar** as you finish.  
+5. (Optional) **Save draft** — continue later in the same browser.
+
+> Tip: The first image in the gallery is the **cover**. Click **Omslag** on any image to promote it to hero.
 
 ---
 
@@ -51,51 +64,57 @@ AnnonsVän Pro is your control room for listings. **One ad → multiple marketpl
 <table>
   <tr>
     <td colspan="2" align="center">
-      <img src="screenshots/1.png" alt="Studio overview" width="100%" />
+      <img src="screenshots/1.png" alt="Studio overview" width="90%" />
     </td>
   </tr>
   <tr>
     <td width="50%" align="center">
       <img src="screenshots/2.png" alt="Image lightbox" width="100%" />
     </td>
-    <td width="50%" align="center">
+    <td width="25%" align="center">
       <img src="screenshots/3.png" alt="Publishing checklist" width="100%" />
     </td>
   </tr>
 </table>
 
-<p align="center"><sub><i>Studio overview (top) · Lightbox & Checklist (bottom)</i></sub></p>
+<p align="center"><sub><i>Studio overview (top) · Lightbox & checklist (bottom)</i></sub></p>
 
 ---
 
 ## 🧰 Tech
-**Front‑end**  
-- HTML5  
-- CSS3 (custom properties, responsive grid, animated gradient background)  
-- Vanilla JavaScript (ES2020+)
+**Front-end**  
+- **HTML5** (semantic structure)  
+- **CSS3** (custom properties, responsive grid, animated gradient background)  
+- **Vanilla JavaScript (ES2020+)** for state, drag/reorder, lightbox, scoring
 
 **AI**  
-- Google **Gemini API** (server proxy) for Swedish description generation  
-- Template‑based fallback when the API is unavailable
+- Google **Gemini API** (via lightweight server proxy) for Swedish description generation  
+- Clean **template fallback** when API is unavailable
 
 **Images**  
-- Client‑side resize/compression via Canvas API  
-- Local rotations; fullscreen zoom & rotate
+- Client-side **resize/compression** via Canvas API  
+- Local **rotate**, fullscreen **zoom & rotate**
 
 **State & Storage**  
-- `localStorage` for drafts, progress, and preferences
+- **localStorage** for drafts, marketplace progress, and preferences
 
 **Hosting**  
-- **Vercel** (global edge network, HTTPS by default)
+- **Vercel** (global edge, HTTPS by default)
 
 ---
 
 ## 🗺 Roadmap (v2)
-- Direct publishing via official marketplace APIs (where available)
-- Cloud sync for drafts (multi‑device)
-- Image auto‑optimization per platform (size/ratio/background)
-- More marketplaces & smart templates
-- Optional account layer for teams & history
+**Top priorities**
+- 🧩 **Move to SvelteKit + Tailwind CSS** for performance, component structure, and consistent design system.  
+- 🧭 **Browser extension** to auto-fill marketplace forms (Tradera, Blocket, FBM, eBay) directly on their sites.  
+- 📱 **Mobile optimization** (thumb-first interactions, bigger targets, faster image handling on phones).
+
+**Also planned**
+- 🔌 Direct publishing via official marketplace APIs (where policies allow).  
+- ☁️ Cloud sync for drafts (multi-device continuity).  
+- 🖼 Platform-aware image optimization (size/ratio/background).  
+- 🌍 More marketplaces & smarter templates.  
+- 👥 Optional account layer (teams/history) when needed.
 
 ---
 
@@ -103,34 +122,33 @@ AnnonsVän Pro is your control room for listings. **One ad → multiple marketpl
 
 <details>
 <summary><b>Does it publish to marketplaces automatically?</b></summary>
-Not yet. Today it prepares perfectly formatted content and opens each marketplace so you can paste/confirm. API publishing is on the roadmap where platform policies allow it.
+Not yet. Today it prepares perfectly formatted content and opens each marketplace so you can paste/confirm. API/extension-based publishing is on the roadmap where platform policies allow it.
 </details>
 
 <details>
 <summary><b>Where do my images and drafts live?</b></summary>
-Locally in your browser (localStorage). Images are compressed client‑side; nothing is uploaded unless you choose to publish on a marketplace.
+Locally in your browser via <code>localStorage</code>. Images are compressed client-side; nothing is uploaded unless you publish on a marketplace.
 </details>
 
 <details>
 <summary><b>Is AI required?</b></summary>
-No. AI is optional. If the Gemini API isn’t reachable, we fall back to a clean, local template.
+No. AI is optional. If the Gemini API isn’t reachable, the app falls back to a clean, local template.
 </details>
 
 <details>
-<summary><b>Can I use this on mobile?</b></summary>
-Yes. The layout adapts for smaller screens (panels stack vertically). Desktop offers the most room for image work.
+<summary><b>Will it work well on mobile?</b></summary>
+Yes — panels stack vertically and controls scale. A dedicated mobile pass is a top priority in v2 for a truly thumb-first feel.
 </details>
 
 ---
 
 ## 👤 About
-Built and maintained by **a one‑person team**.  
-If you enjoy AnnonsVän Pro, a ⭐ on the repo helps a lot.
+Built and maintained by **a one-person team**.  
+If you enjoy AnnonsVän Pro, a ⭐ on the repo means a lot.
 
-**Contact:** Open an issue or reach out via the app.
+**Contact:** open an issue or just send a message.
 
 ---
 
 ## 📄 License
-Add your preferred license here (MIT recommended).
-
+no
