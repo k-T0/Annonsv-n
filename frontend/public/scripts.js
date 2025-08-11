@@ -11,21 +11,20 @@
 
   let currentDraftId = null;
 
-  // Copy pills
   qsa('[data-copy]').forEach(b=>b.addEventListener('click',()=>{
     const id=b.getAttribute('data-copy'); const el=doc(id);
     const t=id==='price'?(el.value?el.value+' SEK':''):(el.value||'');
     if(t){navigator.clipboard.writeText(t).then(()=>toastMsg('Kopierat'));}
   }));
 
-  // Tags
   const chipBox=doc('tag-chips');
   function renderChips(){
     if(!chipBox) return;
     chipBox.innerHTML='';
     (tags?.value||'').split(',').map(t=>t.trim()).filter(Boolean).forEach(tag=>{
-      const s=document.createElement('span'); s.className='tag-chip';
-      s.innerHTML=`${esc(tag)} <span class="x" data-x="${esc(tag)}">×</span>`; chipBox.appendChild(s);
+      const s=document.createElement('span');
+      s.className='tag-chip'; s.innerHTML=`${esc(tag)} <span class="x" data-x="${esc(tag)}">×</span>`;
+      chipBox.appendChild(s);
     });
   }
   tags&&tags.addEventListener('input',renderChips);
@@ -44,8 +43,9 @@
     tags.value=Array.from(merged).join(', '); renderChips(); toastMsg('Taggar genererade');
   }); renderChips();
 
-  // AI generate
-  qsa('.btn.ai').forEach(btn=>btn.addEventListener('click',()=>{ const style=btn.dataset.style; generateAI(style, btn); }));
+  qsa('.btn.ai').forEach(btn=>btn.addEventListener('click',()=>{
+    const style=btn.dataset.style; generateAI(style, btn);
+  }));
   on('improve','click',()=>{description.value=(description.value||'')+' Levereras rengjord och testad.'; updatePreview(); recalc();});
   on('summarize','click',()=>{const s=(description.value||'').split(/[.?!]/).map(t=>t.trim()).filter(Boolean); description.value=s.slice(0,2).join('. ')+(s.length>2?' …':''); updatePreview(); recalc();});
 
@@ -58,14 +58,14 @@
         const res=await fetch(`${BACKEND}/generate-description`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({style,title:t,price:p,condition:c,notes:n,city:k})});
         if(res.ok){ const data=await res.json(); description.value = sanitize(data.description||''); }
         else { description.value = fallbackAI(style); }
-      }else{ description.value = fallbackAI(style); }
+      }else{
+        description.value = fallbackAI(style);
+      }
     }catch(e){ description.value=fallbackAI(style); }
     finally{ btn.disabled=false; btn.textContent=old; updatePreview(); recalc(); }
   }
   function sanitize(s=''){
-    return s.replace(/(^|\s)#{1,6}\s*/g,'$1').replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1')
-      .replace(/`{1,3}[^`]*`{1,3}/g,'').replace(/^\s*[-*•]\s+/gm,'· ')
-      .replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    return s.replace(/(^|\s)#{1,6}\s*/g,'$1').replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g,'$1').replace(/`{1,3}[^`]*`{1,3}/g,'').replace(/^\s*[-*•]\s+/gm,'· ').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
   }
   function fallbackAI(m){
     const b=title.value||'Produkten';
@@ -75,17 +75,12 @@
   }
 
   // Images
-  let thumbs=[]; // [{id,src,rotation}]
-  const fileInput=doc('photos'), drop=doc('drop');
-
-  // Click-to-upload on the big box (except when clicking tools)
-  drop.addEventListener('click', (e)=>{
-    if(e.target.closest('.tools') || e.target.closest('.cover-btn') || e.target.closest('.thumb')) return;
-    fileInput.click();
-  });
+  let thumbs=[];
+  const fileInput=doc('photos'), drop=doc('drop'), groupHandle=doc('group-handle');
+  drop.addEventListener('click', (e)=>{ if(e.target.id==='gallery' || e.target.closest('.tools') || e.target.closest('.cover-btn')) return; fileInput.click(); });
   fileInput.addEventListener('change', e=>handleFiles(e.target.files));
   drop.addEventListener('dragover', e=>{e.preventDefault();});
-  drop.addEventListener('drop', e=>{e.preventDefault();if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);});
+  drop.addEventListener('drop', e=>{e.preventDefault(); if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);});
 
   function handleFiles(fileList){
     const incoming=Array.from(fileList||[]).slice(0, Math.max(0, 10 - thumbs.length));
@@ -97,7 +92,7 @@
   }
   function compressToThumb(file, max=1200, quality=0.8){
     return new Promise((resolve)=>{
-      if(!file || !file.type || !file.type.startsWith('image/')) return resolve(null);
+      if(!file || !file.type?.startsWith('image/')) return resolve(null);
       const reader=new FileReader();
       reader.onload=()=>{
         const img=new Image();
@@ -118,39 +113,24 @@
     });
   }
 
-  // ---- Gallery render (with both hero badge + cover button present) ----
   function renderGallery(){
     gallery.innerHTML='';
     thumbs.forEach((t,idx)=>{
-      const w=document.createElement('div');
-      w.className='thumb'; w.setAttribute('draggable','true'); w.dataset.id = String(t.id);
+      const w=document.createElement('div'); w.className='thumb'; w.setAttribute('draggable','true'); if(idx===0) w.classList.add('is-hero');
+      w.dataset.id = String(t.id);
       w.innerHTML=`
         <img data-id="${t.id}" style="transform: rotate(${t.rotation}deg)" src="${t.src}"/>
-        <div class="badge-hero" data-role="badge">Omslag</div>
-        <button class="cover-btn" data-cover="${t.id}" title="Sätt som omslag">Omslag</button>
-        <div class="tools" data-tools>
+        ${idx===0?'<div class="badge-hero">Omslag</div>':''}
+        ${idx!==0?`<button class="cover-btn" data-cover="${t.id}" title="Sätt som omslag">Omslag</button>`:''}
+        <div class="tools">
           <div class="tool" data-rot="${t.id}" title="Rotera">⟳</div>
           <div class="tool" data-view="${t.id}" title="Visa">🔍</div>
           <div class="tool" data-del="${t.id}" title="Ta bort">✕</div>
         </div>`;
       gallery.appendChild(w);
     });
-    updateHeroBadges();
-    wireDrag();
   }
 
-  function updateHeroBadges(){
-    const nodes = Array.from(gallery.querySelectorAll('.thumb'));
-    nodes.forEach((el,i)=>{
-      el.classList.toggle('is-hero', i===0);
-      const badge = el.querySelector('[data-role="badge"]');
-      const cover = el.querySelector('.cover-btn');
-      if(badge) badge.style.display = i===0 ? 'inline-block' : 'none';
-      if(cover) cover.style.display = i===0 ? 'none' : 'inline-block';
-    });
-  }
-
-  // ---- Preview mirrors order ----
   function renderPreviewThumbs(){
     previewHero.innerHTML='';
     if(thumbs.length){
@@ -162,76 +142,66 @@
     thumbs.forEach(t=>{ const s=document.createElement('img'); s.src=t.src; s.style.transform=`rotate(${t.rotation}deg)`; previewStrip.appendChild(s); });
   }
 
-  // ---- Drag & drop reorder (DOM-in-place, no duplicates) ----
-  let dragId=null, dragEl=null, lastOverId=null;
-  function wireDrag(){
-    // remove previous listeners by re-attaching container-level handlers only once
-  }
-  // container-level handlers (delegated)
+  // Drag to reorder with "gravity" (midpoint crossing)
+  let dragId=null;
   gallery.addEventListener('dragstart', e=>{
     const thumb=e.target.closest('.thumb'); if(!thumb) return;
-    dragEl = thumb; dragId = thumb.dataset.id; thumb.classList.add('dragging');
-    if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', dragId);}catch{} }
-  });
-  gallery.addEventListener('dragend', ()=>{
-    if(dragEl){ dragEl.classList.remove('dragging'); }
-    dragEl=null; dragId=null; lastOverId=null;
-    updateHeroBadges(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
+    dragId = thumb.dataset.id; thumb.classList.add('dragging');
+    e.dataTransfer.effectAllowed='move';
+    // nicer drag preview
+    const img = new Image(); img.src = thumb.querySelector('img').src; e.dataTransfer.setDragImage(img, 32, 32);
   });
   gallery.addEventListener('dragover', e=>{
     e.preventDefault();
-    const over=e.target.closest('.thumb'); if(!over || !dragEl) return;
-    const overId=over.dataset.id; if(!overId || overId===dragId || overId===lastOverId) return;
+    const over=e.target.closest('.thumb'); if(!over) return;
+    const overId=over.dataset.id; if(!dragId || dragId===overId) return;
+
+    const overRect = over.getBoundingClientRect();
+    const before = (e.clientX - overRect.left) < overRect.width/2;
 
     const fromIdx=thumbs.findIndex(t=>String(t.id)===String(dragId));
-    const toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
-    if(fromIdx<0 || toIdx<0) return;
+    let toIdx=thumbs.findIndex(t=>String(t.id)===String(overId));
+    if(!before) toIdx += 1;
+    if(toIdx>fromIdx) toIdx--; // adjust for removal
 
-    // Reorder data
+    if(fromIdx===toIdx || fromIdx<0 || toIdx<0) return;
+
+    const draggingEl = gallery.querySelector('.thumb.dragging');
     const item=thumbs.splice(fromIdx,1)[0];
-    const insertIdx = fromIdx < toIdx ? toIdx : toIdx; // visual nextSibling handles forward/backward
-    thumbs.splice(insertIdx,0,item);
+    thumbs.splice(toIdx,0,item);
 
-    // Reorder DOM (insert after when moving forward)
-    if(fromIdx < toIdx) gallery.insertBefore(dragEl, over.nextSibling);
-    else gallery.insertBefore(dragEl, over);
-
-    lastOverId = overId;
-    updateHeroBadges();
+    // DOM move without full re-render (prevents flicker & dupes)
+    if(draggingEl){
+      if(before) gallery.insertBefore(draggingEl, over);
+      else gallery.insertBefore(draggingEl, over.nextSibling);
+    }
+    renderPreviewThumbs();
+  });
+  gallery.addEventListener('dragend', ()=>{
+    const dragging = gallery.querySelector('.thumb.dragging');
+    if(dragging) dragging.classList.remove('dragging');
+    dragId = null;
+    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
+  });
+  gallery.addEventListener('drop', e=>{
+    e.preventDefault();
+    const dragging = gallery.querySelector('.thumb.dragging');
+    if(dragging) dragging.classList.remove('dragging');
+    dragId = null;
+    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc(); persistThumbsIfDraft();
   });
 
-  // Tools (rotate/view/delete/cover)
+  // Tools: rotate / view / delete / set cover
   gallery.addEventListener('click', e=>{
     const rot=e.target.getAttribute('data-rot');
     const view=e.target.getAttribute('data-view');
     const del=e.target.getAttribute('data-del');
     const cov=e.target.getAttribute('data-cover');
 
-    if(rot){
-      const t=thumbs.find(x=>String(x.id)===rot);
-      if(t){ t.rotation=(t.rotation+90)%360;
-        const img = gallery.querySelector(`.thumb[data-id="${t.id}"] img`);
-        if(img) img.style.transform=`rotate(${t.rotation}deg)`;
-        renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
-      }
-    }
+    if(rot){ const t=thumbs.find(x=>String(x.id)===rot); if(t){ t.rotation=(t.rotation+90)%360; renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
     if(view){ openLB(view); }
-    if(del){
-      const idx = thumbs.findIndex(x=>String(x.id)===del);
-      if(idx>-1){ thumbs.splice(idx,1); const el = gallery.querySelector(`.thumb[data-id="${del}"]`); el?.remove();
-        updateHeroBadges(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
-      }
-    }
-    if(cov){
-      const i=thumbs.findIndex(x=>String(x.id)===cov);
-      if(i>0){
-        const [it]=thumbs.splice(i,1); thumbs.unshift(it);
-        // Move DOM node to front
-        const node = gallery.querySelector(`.thumb[data-id="${cov}"]`);
-        if(node){ gallery.insertBefore(node, gallery.firstChild); }
-        updateHeroBadges(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft();
-      }
-    }
+    if(del){ thumbs=thumbs.filter(x=>String(x.id)!==del); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); }
+    if(cov){ const i=thumbs.findIndex(x=>String(x.id)===cov); if(i>0){ const [it]=thumbs.splice(i,1); thumbs.unshift(it); renderGallery(); renderPreviewThumbs(); recalc(); persistThumbsIfDraft(); } }
   });
 
   // Lightbox
@@ -243,9 +213,9 @@
   function closeLB(){ lb.classList.remove('show'); }
   lbPrev.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex-1+thumbs.length)%thumbs.length; renderLB();});
   lbNext.addEventListener('click',()=>{ if(!thumbs.length) return; lbIndex=(lbIndex+1)%thumbs.length; renderLB();});
-  lbRotate.addEventListener('click',()=>{ if(!thumbs.length) return; thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; renderLB(); const did=thumbs[lbIndex].id; const img=gallery.querySelector(`.thumb[data-id="${did}"] img`); if(img) img.style.transform=`rotate(${thumbs[lbIndex].rotation}deg)`; renderPreviewThumbs(); persistThumbsIfDraft();});
+  lbRotate.addEventListener('click',()=>{ if(!thumbs.length) return; thumbs[lbIndex].rotation=(thumbs[lbIndex].rotation+90)%360; renderLB(); renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();});
 
-  // Preview + quality
+  // Preview + Quality
   [title, price, condition, description].forEach(el=>el.addEventListener('input',()=>{ updatePreview(); recalc(); }));
   function updatePreview(){
     preview.querySelector('.ph-title').textContent=title.value||'Din titel visas här';
@@ -260,10 +230,9 @@
     if(condition.value)score+=15; else sug.push('Välj skick (+15)');
     if((description.value||'').length>40)score+=20; else sug.push('Lägg till beskrivning (+20)');
     const quickMode=!document.body.classList.contains('mode-pro');
-    if((quickMode && thumbs.length>=1) || (!quickMode && thumbs.length>=3)) score+=15;
-    else sug.push(quickMode ? 'Lägg till minst 1 bild (+15)' : 'Lägg till minst 3 bilder (+15)');
+    if((quickMode && thumbs.length>=1) || (!quickMode && thumbs.length>=3)) score+=15; else sug.push(quickMode ? 'Lägg till minst 1 bild (+15)' : 'Lägg till minst 3 bilder (+15)');
     const essentialsOk = !!(title.value && price.value && condition.value && (description.value||'').length>40 && thumbs.length>=1);
-    if(quickMode && essentialsOk) score+=20; // lets quick mode reach 100
+    if(quickMode && essentialsOk) score+=20;
     if(document.body.classList.contains('mode-pro')){
       if((notes&&notes.value.trim())||(city&&city.value.trim())||(tags&&tags.value.trim()))score+=20;
       else sug.push('Fyll i anmärkning/ort/taggar (+20)');
@@ -280,13 +249,16 @@
     const m=btn.getAttribute('data-open'); const txt=formatFor(m);
     const url={tradera:'https://www.tradera.com/selling/new',blocket:'https://www.blocket.se/mina-annonser/lagg-in-annons',facebook:'https://www.facebook.com/marketplace/create/item',ebay:'https://www.ebay.com/sell'};
     window.open(url[m],'_blank');
-    if(navigator.clipboard?.writeText){ navigator.clipboard.writeText(String(txt).replace(/\r?\n/g,'\n')).catch(()=>{}); }
+    if(navigator.clipboard?.writeText){
+      navigator.clipboard.writeText(String(txt).replace(/\r?\n/g,'\n')).catch(()=>{});
+    }
   }));
   qsa('[data-complete]').forEach(btn=>btn.addEventListener('click',()=>{
     const m=btn.getAttribute('data-complete'); if(soldFlag) return;
     state[m]=!state[m]; saveMarkets(); updateAll(); updateProgress(); deriveStatusFromFields(); persistMarketsIfDraft();
     btn.setAttribute('aria-pressed', String(!!state[m]));
   }));
+
   function updateAll(){ Object.keys(state).forEach(m=>{
     byId(`${m}-status`).classList.toggle('completed', !!state[m]);
     const b=qs(`.complete-btn[data-complete="${m}"]`);
@@ -301,14 +273,14 @@
     const condText=condition.value||'';
     if(m==='tradera')return `${title.value}\n\n${description.value}\n\nSkick: ${condText}\nUtgångspris: ${price.value} SEK\nTaggar: ${tags?.value||''}`;
     if(m==='blocket')return `${title.value} - ${price.value} SEK\n\n${description.value}\n\nSkick: ${condText}\nTaggar: ${tags?.value||''}`;
-    if(m==='facebook')return `${title.value}\n${price.value} SEK\n\n${description.value}`; // no tags on FB
+    if(m==='facebook')return `${title.value}\n${price.value} SEK\n\n${description.value}`;
     if(m==='ebay')return `${title.value} [${condText}]\n\n${description.value}\n\nPrice: ${price.value} SEK\nTags: ${tags?.value||''}`;
     return `${title.value}\n${description.value}`;
   }
   function loadMarkets(){ try{return JSON.parse(localStorage.getItem('avp3.markets')||'{"tradera":false,"blocket":false,"facebook":false,"ebay":false}');}catch(e){return {"tradera":false,"blocket":false,"facebook":false,"ebay":false};} }
   function saveMarkets(){ localStorage.setItem('avp3.markets', JSON.stringify(state)); }
 
-  // Status + sold toggle (reversible)
+  // Status + Sold
   let currentStatus='draft', soldFlag=false;
   function deriveStatusFromFields(){
     if(soldFlag){ currentStatus='sold'; return; }
@@ -318,9 +290,11 @@
     else if(hasReq){ currentStatus='ready'; }
     else { currentStatus='draft'; }
   }
+
   const soldBtn = doc('mark-sold');
   soldBtn.addEventListener('click',()=>{
-    soldFlag=!soldFlag; soldBtn.setAttribute('aria-pressed', String(soldFlag));
+    soldFlag=!soldFlag;
+    soldBtn.setAttribute('aria-pressed', String(soldFlag));
     if(soldFlag){
       currentStatus='sold'; confetti(); toastMsg('Markerad som såld 🎉');
       qsa('.complete-btn').forEach(b=>b.setAttribute('disabled','disabled'));
@@ -341,7 +315,55 @@
     step();
   }
 
-  // Drafts
+  // Group-drag: drag the round handle to rotate the whole set left/right
+  if(groupHandle){
+    let startX=0, lastShift=0, active=false, unit=132;
+    function measureUnit(){
+      const first = gallery.querySelector('.thumb');
+      if(!first) return 132;
+      const rect = first.getBoundingClientRect();
+      const gap = parseInt(getComputedStyle(gallery).gap||'12',10);
+      return rect.width + gap;
+    }
+    function applyOrderDOM(){
+      const map = new Map(Array.from(gallery.children).map(el=>[el.dataset.id, el]));
+      thumbs.forEach(t=>{ const el=map.get(String(t.id)); if(el) gallery.appendChild(el); });
+    }
+    function onMove(ev){
+      if(!active) return;
+      const x = (ev.touches? ev.touches[0].clientX : ev.clientX);
+      const dx = x - startX;
+      const shift = Math.trunc(dx / unit);
+      if(shift !== lastShift){
+        const diff = shift - lastShift;
+        if(diff>0){ for(let i=0;i<diff;i++){ thumbs.unshift(thumbs.pop()); } }
+        else { for(let i=0;i<-diff;i++){ thumbs.push(thumbs.shift()); } }
+        applyOrderDOM(); renderPreviewThumbs();
+        lastShift = shift;
+      }
+    }
+    function end(){
+      if(!active) return;
+      active=false; groupHandle.classList.remove('active');
+      renderGallery(); renderPreviewThumbs(); persistThumbsIfDraft();
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', end);
+    }
+    groupHandle.addEventListener('pointerdown', (e)=>{
+      if(!thumbs.length) return;
+      active=true; startX=e.clientX; lastShift=0; unit=measureUnit(); groupHandle.classList.add('active');
+      window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', end);
+    });
+    groupHandle.addEventListener('touchstart', (e)=>{
+      if(!thumbs.length) return;
+      active=true; startX=e.touches[0].clientX; lastShift=0; unit=measureUnit(); groupHandle.classList.add('active');
+      window.addEventListener('touchmove', onMove, {passive:false}); window.addEventListener('touchend', end);
+    });
+  }
+
+  // Drafts (unchanged)
   const draftList=byId('draft-list');
   on('save-draft','click',saveDraft);
   function saveDraft(){
@@ -383,7 +405,7 @@
     Object.keys(state).forEach(k=> state[k] = !!(d.markets && d.markets[k]) );
     saveMarkets(); updateAll(); updateProgress();
     qsa('.complete-btn').forEach(b=> b.toggleAttribute('disabled', soldFlag) );
-    renderGallery(); renderPreviewThumbs(); updatePreview(); recalc();
+    renderChips(); renderGallery(); renderPreviewThumbs(); updatePreview(); recalc();
     toastMsg('Utkast laddat');
   }
   function deleteDraft(id){
@@ -393,18 +415,20 @@
     renderDrafts(); toastMsg('Utkast borttaget');
   }
   function labelForStatus(s){ return s==='ready'?'Redo': s==='published'?'Publicerad': s==='synced'?'Synkad': s==='sold'?'Såld':'Utkast'; }
+
   function persistThumbsIfDraft(){
     if(!currentDraftId) return;
-    const arr=loadDrafts(); const idx=arr.findIndex(d=>d.id===currentDraftId);
+    const arr=loadDrafts();
+    const idx=arr.findIndex(d=>d.id===currentDraftId);
     if(idx>=0){ arr[idx].thumbs = thumbs; localStorage.setItem('avp3.drafts', JSON.stringify(arr)); renderDrafts(); }
   }
   function persistMarketsIfDraft(){
     if(!currentDraftId) return;
-    const arr=loadDrafts(); const idx=arr.findIndex(d=>d.id===currentDraftId);
+    const arr=loadDrafts();
+    const idx=arr.findIndex(d=>d.id===currentDraftId);
     if(idx>=0){ arr[idx].markets = state; arr[idx].status=currentStatus; arr[idx].sold=soldFlag; localStorage.setItem('avp3.drafts', JSON.stringify(arr)); renderDrafts(); }
   }
 
-  // Clear
   on('clear-all','click',()=>{
     title.value=''; price.value=''; condition.value=''; city&&(city.value=''); tags&&(tags.value=''); notes&&(notes.value=''); description.value='';
     thumbs=[]; renderGallery(); renderPreviewThumbs(); renderChips();
@@ -413,12 +437,11 @@
     updatePreview(); recalc(); toastMsg('Rensat');
   });
 
+  updatePreview(); recalc();
+
   // Helpers
   function esc(s){return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
   function toastMsg(t){ toast.textContent=t; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1800); }
   function doc(id){return document.getElementById(id)} function byId(id){return document.getElementById(id)} function qs(s){return document.querySelector(s)} function qsa(s){return Array.from(document.querySelectorAll(s))}
   function on(id,ev,fn){ const el=byId(id); el&&el.addEventListener(ev,fn); }
-
-  // boot
-  renderGallery(); updatePreview(); renderPreviewThumbs(); recalc();
 })();
