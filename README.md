@@ -30,21 +30,11 @@ Write the listing once, let AI draft the Swedish description, drop in images (co
 - **Unified listing form** – Title, price, condition, tags, notes; with a live preview.
 - **Image flow that feels good** – Drag & drop, cover image, reorder with smooth visual feedback, rotate, fullscreen lightbox.
 - **AI description (Swedish)** – Minimal / Simple / Detailed styles via Gemini API (with graceful local fallback).
+- **Preview** — large hero + strip, mirrors order live.  
 - **Marketplace helpers** – Tradera, Blocket, Facebook Marketplace, eBay; copy-ready text per platform + progress tracker.
-- **Drafts that survive refreshes** – Local autosave for listings, images, and per-platform completion.
+- **Drafts** — stored in the browser (`localStorage`), with cover image, status badge, snippet, timestamp.  
 - **Quality score** – Clear, actionable hints to reach a strong listing.
 - **No accounts, no setup** – It’s just the web. Open and go.
-
----
-
-## ⚙️ Core Features
-- **Unified listing form** — title, price, condition, notes, city.  
-- **Image box** — single modern dropzone, drag & reorder with a smooth “gravity” feel, rotate, lightbox, set cover (hero).  
-- **AI descriptions (Swedish)** — *Minimal*, *Enkel*, *Detaljerad*; cleans markdown; marketplace-safe plain text.  
-- **Preview** — large hero + strip, mirrors order live.  
-- **Multi-marketplace publishing** — platform-specific formatting and one-click “Open” + “Klar” tracking.  
-- **Drafts** — stored in the browser (`localStorage`), with cover image, status badge, snippet, timestamp.  
-- **Quality meter** — subtle score with actionable suggestions.
 
 ---
 
