@@ -141,4 +141,4 @@ If you enjoy AnnonsVän Pro, a ⭐ on the repo means a lot.
 ---
 
 ## 📄 License
-no
+non yet (dont steal it)
