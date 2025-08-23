@@ -95,7 +95,7 @@ Write the listing once, let AI draft the Swedish description, drop in images (co
 
 ## 🗺 Roadmap (v2)
 **Top priorities**
-- 🧩 **Move to SvelteKit + Tailwind CSS** for performance, component structure, and consistent design system.  
+- 🧩 **Move to React + Tailwind CSS with shadCn** for performance, component structure, and consistent design system.  
 - 🧭 **Browser extension** to auto-fill marketplace forms (Tradera, Blocket, FBM, eBay) directly on their sites.  
 - 📱 **Mobile optimization** (thumb-first interactions, bigger targets, faster image handling on phones).
 
