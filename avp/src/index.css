@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* small helpers */
+html, body, #root {
+  height: 100%;
+}
+.min-h-svh { min-height: 100vh; }
+.bg-studio {
+  background: linear-gradient(180deg, #fff9f6 0%, #fff9f5 100%);
+}
