@@ -1,7 +1,14 @@
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 
-const Header: React.FC = () => {
+type Props = {
+  mode: "quick" | "pro";
+  onModeChange: (m: "quick" | "pro") => void;
+};
+
+const Header: React.FC<Props> = ({ mode, onModeChange }) => {
+  const pill =
+    "rounded-full px-4 py-2 border transition";
   return (
     <header className="border-b border-neutral-800 p-4 bg-neutral-900/60">
       <div className="max-w-[1400px] mx-auto flex items-center justify-between">
@@ -14,8 +21,18 @@ const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button className="bg-transparent border border-neutral-600">Quick Sell</Button>
-          <Button className="bg-rose-600">Pro Mode</Button>
+          <button
+            className={`${pill} ${mode === "quick" ? "bg-white/10 border-white/20" : "bg-transparent border-neutral-600"}`}
+            onClick={() => onModeChange("quick")}
+          >
+            Quick Sell
+          </button>
+          <Button
+            className={`${mode === "pro" ? "bg-rose-600" : "bg-transparent border border-neutral-600"}`}
+            onClick={() => onModeChange("pro")}
+          >
+            Pro Mode
+          </Button>
         </div>
       </div>
     </header>
